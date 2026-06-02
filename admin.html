@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2c4a6e">
+<title>매출일보 — 관리자</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4f8;--surface:#fff;--border:#d0d8e4;
+  --accent:#8b2c2c;--accent2:#2c4a6e;--text:#1a2535;
+  --muted:#5a6a82;--gold:#c49a3c;--green:#2e7d32;
+  --red:#c62828;--shadow:rgba(26,37,53,.1);--radius:6px;
+  --font-serif:'Noto Serif KR',serif;--font-sans:'Noto Sans KR',sans-serif;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+}
+html{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100%;-webkit-font-smoothing:antialiased;}
+
+/* ── 로그인 화면 ── */
+.login-wrap{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+}
+.login-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 4px 24px var(--shadow);padding:36px 32px;width:100%;max-width:380px;
+  text-align:center;
+}
+.login-logo{font-size:2.5rem;margin-bottom:8px}
+.login-title{font-family:var(--font-serif);font-size:1.2rem;color:var(--accent2);margin-bottom:4px}
+.login-sub{font-size:.78rem;color:var(--muted);margin-bottom:28px;letter-spacing:.05em}
+.login-card input{
+  width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);
+  font-size:16px;font-family:var(--font-sans);margin-bottom:12px;
+  transition:border-color .2s;-webkit-appearance:none;
+}
+.login-card input:focus{outline:none;border-color:var(--accent2)}
+.login-btn{
+  width:100%;padding:13px;background:var(--accent2);color:#fff;border:none;
+  border-radius:var(--radius);font-family:var(--font-serif);font-size:.95rem;
+  letter-spacing:.08em;cursor:pointer;transition:background .2s;
+}
+.login-btn:hover{background:#1a3352}
+.login-err{font-size:.78rem;color:var(--red);margin-top:8px;min-height:20px}
+
+/* ── 앱 레이아웃 ── */
+.app-wrap{display:none;flex-direction:column;min-height:100vh;}
+.app-wrap.show{display:flex}
+
+/* 헤더 */
+.adm-header{
+  background:var(--accent2);color:#fff;
+  padding:calc(12px + var(--sat)) 20px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  border-bottom:3px solid var(--gold);
+}
+.adm-header-left h1{font-family:var(--font-serif);font-size:1.1rem;letter-spacing:.12em}
+.adm-header-left span{font-size:.7rem;opacity:.75;letter-spacing:.08em}
+.logout-btn{
+  padding:6px 14px;background:rgba(255,255,255,.15);color:#fff;
+  border:1px solid rgba(255,255,255,.35);border-radius:16px;
+  font-size:.75rem;cursor:pointer;font-family:var(--font-sans);
+}
+
+/* 필터 바 */
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:calc(51px + var(--sat));z-index:90;}
+.filter-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:1200px;margin:0 auto;}
+.branch-tabs{display:flex;flex-wrap:wrap;gap:5px}
+.tab-btn{
+  padding:6px 12px;border:1px solid var(--border);border-radius:20px;
+  background:#fff;color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .15s;
+  white-space:nowrap;
+}
+.tab-btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff;font-weight:600}
+.filter-divider{width:1px;height:24px;background:var(--border);margin:0 4px}
+.date-range{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.date-range input{
+  padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);
+  font-size:.8rem;font-family:var(--font-sans);-webkit-appearance:none;background:#fff;
+}
+.date-range span{font-size:.78rem;color:var(--muted)}
+.query-btn{
+  padding:7px 16px;background:var(--accent);color:#fff;border:none;
+  border-radius:var(--radius);font-size:.8rem;cursor:pointer;font-family:var(--font-sans);
+  white-space:nowrap;
+}
+
+/* 메인 */
+.adm-main{flex:1;padding:20px;max-width:1200px;margin:0 auto;width:100%}
+
+/* 요약 카드 */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:400px){.summary-grid{grid-template-columns:1fr 1fr}}
+.sum-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;box-shadow:0 1px 4px var(--shadow);
+}
+.sum-card .sc-label{font-size:.72rem;color:var(--muted);letter-spacing:.05em;margin-bottom:6px}
+.sum-card .sc-value{font-family:var(--font-serif);font-size:1.15rem;font-weight:700;color:var(--accent2)}
+.sum-card .sc-value.warn{color:#b85c00}
+.sum-card .sc-value.good{color:var(--green)}
+.sum-card .sc-sub{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+/* 차트 그리드 */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+@media(max-width:700px){.chart-grid{grid-template-columns:1fr}}
+.chart-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;box-shadow:0 1px 4px var(--shadow);
+}
+.chart-card.wide{grid-column:span 2}
+@media(max-width:700px){.chart-card.wide{grid-column:span 1}}
+.chart-title{font-family:var(--font-serif);font-size:.85rem;color:var(--accent2);margin-bottom:14px;border-left:3px solid var(--gold);padding-left:8px}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:280px}
+.pie-wrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.pie-canvas-wrap{position:relative;width:160px;height:160px;flex-shrink:0}
+.pie-legend{flex:1;min-width:140px}
+.pie-legend-item{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--muted);margin-bottom:5px}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* 테이블 */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 4px var(--shadow);overflow:hidden;margin-bottom:20px}
+.table-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
+.table-title{font-family:var(--font-serif);font-size:.85rem;color:var(--accent2);border-left:3px solid var(--gold);padding-left:8px}
+.table-count{font-size:.75rem;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:700px}
+thead tr{background:#f5f7fa}
+th{padding:10px 12px;text-align:left;color:var(--muted);font-weight:500;font-size:.73rem;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px dashed var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+.td-date{color:var(--muted);font-size:.75rem;white-space:nowrap}
+.td-branch{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;white-space:nowrap}
+.td-sales{font-family:var(--font-serif);font-weight:700;color:var(--accent2);white-space:nowrap}
+.td-rate{font-weight:700;white-space:nowrap}
+.td-rate.good{color:var(--green)}
+.td-rate.warn{color:#b85c00}
+.td-rate.bad{color:var(--red)}
+.td-note{color:var(--muted);font-size:.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 지점 색상 */
+.br-경기점{background:#e3f2fd;color:#1565c0}
+.br-노원점{background:#f3e5f5;color:#6a1b9a}
+.br-파주점{background:#e8f5e9;color:#2e7d32}
+.br-고양점{background:#fff3e0;color:#e65100}
+.br-마곡점{background:#fce4ec;color:#880e4f}
+.br-연세점{background:#e0f2f1;color:#00695c}
+
+/* 빈 상태 */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .ei{font-size:2.5rem;margin-bottom:12px}
+.empty-state p{font-size:.88rem}
+
+/* 로딩 */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(240,244,248,.88);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.loading-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:var(--font-serif);font-size:.85rem;color:var(--muted)}
+
+/* 토스트 */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 22px;border-radius:20px;font-size:.82rem;transition:transform .3s;z-index:200;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+
+/* ── 전년 동기 비교 ── */
+.yoy-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 4px var(--shadow);margin-bottom:20px;overflow:hidden}
+.yoy-sec-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.yoy-sec-title{font-family:var(--font-serif);font-size:.85rem;color:var(--accent2);border-left:3px solid var(--gold);padding-left:8px}
+.yoy-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:600px){.yoy-grid{grid-template-columns:1fr}}
+.yoy-panel{padding:16px;border-right:1px solid var(--border)}
+.yoy-panel:last-child{border-right:none}
+.yoy-panel-title{font-size:.72rem;color:var(--muted);letter-spacing:.06em;margin-bottom:12px;font-weight:600}
+.yoy-tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.yoy-tbl th{padding:6px 8px;text-align:center;color:var(--muted);font-weight:500;font-size:.7rem;border-bottom:1px solid var(--border)}
+.yoy-tbl th:first-child{text-align:left}
+.yoy-tbl td{padding:7px 8px;text-align:center;border-bottom:1px dashed var(--border);font-family:'Noto Serif KR',serif}
+.yoy-tbl td:first-child{text-align:left;font-family:'Noto Sans KR',sans-serif;font-size:.75rem;color:var(--muted)}
+.yoy-tbl tr:last-child td{border-bottom:none}
+.yoy-tbl .cur{color:var(--accent2);font-weight:700}
+.yoy-tbl .pre{color:var(--muted)}
+.diff-up{color:#2e7d32;font-weight:700}
+.diff-dn{color:#c62828;font-weight:700}
+.diff-eq{color:var(--muted)}
+.monthly-chart-wrap{padding:16px}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- 로딩 -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">데이터 불러오는 중…</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- ── 로그인 화면 ── -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">🍽</div>
+    <div class="login-title">매출일보 관리자</div>
+    <div class="login-sub">管理者 ログイン</div>
+    <input type="password" id="pwInput" placeholder="관리자 비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ── 관리자 앱 ── -->
+<div class="app-wrap" id="appWrap">
+
+  <!-- 헤더 -->
+  <header class="adm-header">
+    <div class="adm-header-left">
+      <h1>🍽 매출일보 관리자</h1>
+      <div><span>売上管理システム</span></div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+  </header>
+
+  <!-- 필터 바 -->
+  <div class="filter-bar">
+    <div class="filter-row">
+      <div class="branch-tabs" id="branchTabs">
+        <button class="tab-btn active" onclick="setBranch('전체',this)">전체</button>
+        <button class="tab-btn" onclick="setBranch('경기점',this)">경기점</button>
+        <button class="tab-btn" onclick="setBranch('노원점',this)">노원점</button>
+        <button class="tab-btn" onclick="setBranch('파주점',this)">파주점</button>
+        <button class="tab-btn" onclick="setBranch('고양점',this)">고양점</button>
+        <button class="tab-btn" onclick="setBranch('마곡점',this)">마곡점</button>
+        <button class="tab-btn" onclick="setBranch('연세점',this)">연세점</button>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="date-range">
+        <input type="date" id="dateFrom">
+        <span>~</span>
+        <input type="date" id="dateTo">
+        <button class="query-btn" onclick="loadData()">조회</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 -->
+  <main class="adm-main">
+
+    <!-- 빈 상태 -->
+    <div class="empty-state" id="emptyState">
+      <div class="ei">📊</div>
+      <p>조회 버튼을 눌러 데이터를 불러오세요</p>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="summary-grid hidden" id="summaryGrid">
+      <div class="sum-card">
+        <div class="sc-label">📈 누적 총매출</div>
+        <div class="sc-value" id="sumTotalSales">—</div>
+        <div class="sc-sub" id="sumDays">—</div>
+      </div>
+      <div class="sum-card">
+        <div class="sc-label">💰 누적 순매출</div>
+        <div class="sc-value" id="sumNetSales">—</div>
+        <div class="sc-sub" id="sumDiscount">할인 —</div>
+      </div>
+      <div class="sum-card">
+        <div class="sc-label">🚚 누적 총발주액</div>
+        <div class="sc-value" id="sumOrder">—</div>
+        <div class="sc-sub" id="sumOrderSub">—</div>
+      </div>
+      <div class="sum-card">
+        <div class="sc-label">📊 누적 원가율</div>
+        <div class="sc-value warn" id="sumCostRate">—</div>
+        <div class="sc-sub" id="sumCostSub">발주액 / 총매출</div>
+      </div>
+    </div>
+
+    <!-- 차트 -->
+    <div class="chart-grid hidden" id="chartGrid">
+      <!-- 월별 매출 추이 -->
+      <div class="chart-card wide">
+        <div class="chart-title">월별 매출 & 발주 추이</div>
+        <div class="chart-wrap tall"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <!-- 지점별 매출 -->
+      <div class="chart-card">
+        <div class="chart-title">지점별 누적 매출</div>
+        <div class="chart-wrap"><canvas id="branchChart"></canvas></div>
+      </div>
+      <!-- 업체별 파이 -->
+      <div class="chart-card">
+        <div class="chart-title">업체별 누적 발주 원가율</div>
+        <div class="pie-wrap">
+          <div class="pie-canvas-wrap"><canvas id="vendorPieChart"></canvas></div>
+          <div class="pie-legend" id="vendorPieLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 전년 동기 비교 -->
+    <div class="yoy-section hidden" id="yoySection">
+      <div class="yoy-sec-header">
+        <div class="yoy-sec-title">📅 전년 동기 비교</div>
+        <span id="yoyPeriodLabel" style="font-size:.72rem;color:var(--muted)"></span>
+      </div>
+      <div class="yoy-grid">
+        <div class="yoy-panel">
+          <div class="yoy-panel-title">📊 기간 합계 비교</div>
+          <div id="yoySummaryTable"></div>
+        </div>
+        <div class="yoy-panel">
+          <div class="yoy-panel-title">📈 월별 매출 비교 (올해 vs 작년)</div>
+          <div style="position:relative;height:200px"><canvas id="yoyMonthlyChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상세 테이블 -->
+    <div class="table-card hidden" id="tableCard">
+      <div class="table-header">
+        <div class="table-title">상세 기록</div>
+        <div class="table-count" id="tableCount">0건</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>기입일</th>
+              <th>지점</th>
+              <th>담당</th>
+              <th>총매출</th>
+              <th>순매출</th>
+              <th>발주합계</th>
+              <th>원가율</th>
+              <th>특이사항</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ══ 설정 ═══════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec'; // ← Apps Script URL 입력
+const ADMIN_PW   = 'sushimago2025';        // ← 비밀번호 변경 가능
+// ═══════════════════════════════════════════════════════════
+
+const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','법인카드발주'];
+const COLORS  = ['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#2c6e6b'];
+const BR_LIST = ['경기점','노원점','파주점','고양점','마곡점','연세점'];
+
+let charts = {};
+let currentBranch = '전체';
+let allRows = [];
+
+// ── 로그인 ────────────────────────────────────────────────
+function doLogin() {
+  var pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appWrap').classList.add('show');
+    initDateRange();
+    loadData();
+  } else {
+    document.getElementById('loginErr').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pwInput').value = '';
+  }
+}
+function doLogout() {
+  document.getElementById('appWrap').classList.remove('show');
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+// ── 날짜 초기화 ───────────────────────────────────────────
+function initDateRange() {
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth();
+  document.getElementById('dateFrom').value = y + '-' + String(m+1).padStart(2,'0') + '-01';
+  document.getElementById('dateTo').value   = y + '-' + String(m+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+}
+
+// ── 지점 선택 ─────────────────────────────────────────────
+function setBranch(name, el) {
+  currentBranch = name;
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+}
+
+// ── 데이터 조회 ───────────────────────────────────────────
+function loadData() {
+  var from = document.getElementById('dateFrom').value;
+  var to   = document.getElementById('dateTo').value;
+  if (!from || !to) { showToast('기간을 선택해 주세요.'); return; }
+
+  showLoading('데이터 불러오는 중…');
+
+  var url = new URL(API_URL);
+  url.searchParams.set('action', 'getAdminData');
+  url.searchParams.set('branch', JSON.stringify(currentBranch));
+  url.searchParams.set('from',   JSON.stringify(from));
+  url.searchParams.set('to',     JSON.stringify(to));
+
+  fetch(url.toString())
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('오류: '+res.error); return; }
+      allRows = res.rows;
+      renderAll(res.rows, from, to);
+      loadAdminYoy(from, to);
+    })
+    .catch(function(e){ hideLoading(); showToast('서버 오류: '+e.message); });
+}
+
+// ── 전체 렌더링 ───────────────────────────────────────────
+function renderAll(rows, from, to) {
+  if (!rows || rows.length === 0) {
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('summaryGrid').classList.add('hidden');
+    document.getElementById('chartGrid').classList.add('hidden');
+    document.getElementById('tableCard').classList.add('hidden');
+    return;
+  }
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('summaryGrid').classList.remove('hidden');
+  document.getElementById('chartGrid').classList.remove('hidden');
+  document.getElementById('tableCard').classList.remove('hidden');
+
+  renderSummary(rows);
+  renderMonthlyChart(rows);
+  renderBranchChart(rows);
+  renderVendorPie(rows);
+  renderTable(rows);
+}
+
+
+// ── 전년 동기 비교 (관리자) ──────────────────────────────────
+function loadAdminYoy(from, to) {
+  document.getElementById('yoySection').classList.add('hidden');
+
+  var url = new URL(API_URL);
+  url.searchParams.set('action', 'getAdminYoy');
+  url.searchParams.set('branch', JSON.stringify(currentBranch));
+  url.searchParams.set('from',   JSON.stringify(from));
+  url.searchParams.set('to',     JSON.stringify(to));
+
+  fetch(url.toString())
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res.success) return;
+      renderAdminYoy(res, from, to);
+      document.getElementById('yoySection').classList.remove('hidden');
+    })
+    .catch(function(){});
+}
+
+function renderAdminYoy(res, from, to) {
+  var c = res.current, p = res.previous;
+  var curYear = new Date(from).getFullYear();
+  var preYear = curYear - 1;
+
+  document.getElementById('yoyPeriodLabel').textContent =
+    from + ' ~ ' + to + '  vs  ' + preYear + '년 동기';
+
+  // 합계 비교 테이블
+  function diffHtml(cur, pre) {
+    if (!pre || pre === 0) return '<span class="diff-eq">—</span>';
+    var pct = ((cur-pre)/pre*100).toFixed(1);
+    if (cur > pre) return '<span class="diff-up">▲'+pct+'%</span>';
+    if (cur < pre) return '<span class="diff-dn">▼'+Math.abs(pct)+'%</span>';
+    return '<span class="diff-eq">±0%</span>';
+  }
+  function diffPt(cur, pre) {
+    if (!pre || pre === 0) return '<span class="diff-eq">—</span>';
+    var pt = (Number(cur)-Number(pre)).toFixed(1);
+    if (pt > 0) return '<span class="diff-dn">▲'+pt+'%p</span>';
+    if (pt < 0) return '<span class="diff-up">▼'+Math.abs(pt)+'%p</span>';
+    return '<span class="diff-eq">±0</span>';
+  }
+
+  var tbl = '<table class="yoy-tbl">'
+    +'<thead><tr><th>항목</th><th>올해('+curYear+')</th><th>작년('+preYear+')</th><th>증감</th></tr></thead>'
+    +'<tbody>'
+    +'<tr><td>총매출</td><td class="cur">'+fmtWon(c.totalSales)+'</td><td class="pre">'+fmtWon(p.totalSales)+'</td><td>'+diffHtml(c.totalSales,p.totalSales)+'</td></tr>'
+    +'<tr><td>순매출</td><td class="cur">'+fmtWon(c.totalNet)+'</td><td class="pre">'+fmtWon(p.totalNet)+'</td><td>'+diffHtml(c.totalNet,p.totalNet)+'</td></tr>'
+    +'<tr><td>발주액</td><td class="cur">'+fmtWon(c.totalOrder)+'</td><td class="pre">'+fmtWon(p.totalOrder)+'</td><td>'+diffHtml(c.totalOrder,p.totalOrder)+'</td></tr>'
+    +'<tr><td>원가율</td><td class="cur">'+c.costRate+'%</td><td class="pre">'+p.costRate+'%</td><td>'+diffPt(c.costRate,p.costRate)+'</td></tr>'
+    +'</tbody></table>';
+  document.getElementById('yoySummaryTable').innerHTML = tbl;
+
+  // 월별 비교 차트
+  var allKeys = Array.from(new Set(
+    Object.keys(res.monthly).concat(Object.keys(res.monthlyPre))
+  )).sort();
+
+  // 작년 키를 올해 표시용으로 변환 (연도+1)
+  var curKeys = allKeys.filter(function(k){ return k.startsWith(String(curYear)); });
+  var preKeys = allKeys.filter(function(k){ return k.startsWith(String(preYear)); });
+  var labels  = curKeys.map(function(k){ return k.slice(5)+'월'; }); // MM월
+
+  var curSales = curKeys.map(function(k){ return res.monthly[k]    ? res.monthly[k].sales    : 0; });
+  var preSales = preKeys.map(function(k){ return res.monthlyPre[k] ? res.monthlyPre[k].sales : 0; });
+
+  // 길이 맞추기
+  while (preSales.length < curSales.length) preSales.push(0);
+  while (curSales.length < preSales.length) { curSales.push(0); labels.push('—'); }
+
+  if (charts.yoyMonthly) charts.yoyMonthly.destroy();
+  var ctx = document.getElementById('yoyMonthlyChart').getContext('2d');
+  charts.yoyMonthly = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: curYear+'년', data: curSales, backgroundColor: 'rgba(44,74,110,.8)',  borderRadius: 3 },
+        { label: preYear+'년', data: preSales, backgroundColor: 'rgba(196,154,60,.55)', borderRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins:{ legend:{ labels:{ font:{size:10}, boxWidth:10 } } },
+      scales:{
+        y:{ ticks:{ callback:function(v){ return (v/10000).toFixed(0)+'만'; }, font:{size:9} } },
+        x:{ ticks:{ font:{size:10} } }
+      }
+    }
+  });
+}
+
+// ── 요약 카드 ─────────────────────────────────────────────
+function renderSummary(rows) {
+  var totalSales=0, totalNet=0, totalDisc=0, totalOrder=0;
+  rows.forEach(function(r){
+    totalSales += r.totalSales||0;
+    totalNet   += r.netSales||0;
+    totalDisc  += r.discount||0;
+    totalOrder += r.dailyOrderTotal||0;
+  });
+  var rate = totalSales>0 ? ((totalOrder/totalSales)*100).toFixed(1) : '0.0';
+
+  document.getElementById('sumTotalSales').textContent = fmtWon(totalSales);
+  document.getElementById('sumDays').textContent       = rows.length + '일치 기록';
+  document.getElementById('sumNetSales').textContent   = fmtWon(totalNet);
+  document.getElementById('sumDiscount').textContent   = '할인 ' + fmtWon(totalDisc);
+  document.getElementById('sumOrder').textContent      = fmtWon(totalOrder);
+  document.getElementById('sumCostRate').textContent   = rate + '%';
+
+  var rateEl = document.getElementById('sumCostRate');
+  rateEl.className = 'sc-value';
+  if (Number(rate) < 28)      rateEl.classList.add('good');
+  else if (Number(rate) < 35) rateEl.classList.add('warn');
+  else                        rateEl.classList.add('warn');
+}
+
+// ── 월별 차트 ─────────────────────────────────────────────
+function renderMonthlyChart(rows) {
+  var monthly = {};
+  rows.forEach(function(r) {
+    var d = String(r.entryDate).slice(0,7); // YYYY-MM
+    if (!monthly[d]) monthly[d] = {sales:0, order:0};
+    monthly[d].sales += r.totalSales||0;
+    monthly[d].order += r.dailyOrderTotal||0;
+  });
+  var labels = Object.keys(monthly).sort();
+  var sales  = labels.map(function(l){ return monthly[l].sales; });
+  var orders = labels.map(function(l){ return monthly[l].order; });
+
+  if (charts.monthly) charts.monthly.destroy();
+  var ctx = document.getElementById('monthlyChart').getContext('2d');
+  charts.monthly = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label:'총매출', data:sales,  backgroundColor:'rgba(44,74,110,.75)',  borderRadius:3 },
+        { label:'발주액', data:orders, backgroundColor:'rgba(196,154,60,.65)', borderRadius:3 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ font:{size:11}, boxWidth:12 } } },
+      scales:{
+        y:{ ticks:{ callback:function(v){ return (v/10000).toFixed(0)+'만'; }, font:{size:10} } },
+        x:{ ticks:{ font:{size:10} } }
+      }
+    }
+  });
+}
+
+// ── 지점별 차트 ───────────────────────────────────────────
+function renderBranchChart(rows) {
+  var branchData = {};
+  BR_LIST.forEach(function(b){ branchData[b]=0; });
+  rows.forEach(function(r){ if(branchData[r.branch]!==undefined) branchData[r.branch]+=(r.totalSales||0); });
+
+  var labels = BR_LIST.filter(function(b){ return branchData[b]>0; });
+  var values = labels.map(function(b){ return branchData[b]; });
+  var colors = ['#1565c0','#6a1b9a','#2e7d32','#e65100','#880e4f','#00695c'];
+
+  if (charts.branch) charts.branch.destroy();
+  var ctx = document.getElementById('branchChart').getContext('2d');
+  charts.branch = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets:[{ data:values, backgroundColor:colors.slice(0,labels.length), borderRadius:4 }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(item){ return ' '+fmtWon(item.raw); } } } },
+      scales:{
+        x:{ ticks:{ callback:function(v){ return (v/10000).toFixed(0)+'만'; }, font:{size:10} } },
+        y:{ ticks:{ font:{size:11} } }
+      }
+    }
+  });
+}
+
+// ── 업체별 파이 ───────────────────────────────────────────
+function renderVendorPie(rows) {
+  var totalSales = 0;
+  var vt = {};
+  VENDORS.forEach(function(v){ vt[v]=0; });
+  rows.forEach(function(r){
+    totalSales += r.totalSales||0;
+    VENDORS.forEach(function(v){ vt[v]+=(r[vendorKey(v)]||0); });
+  });
+
+  var labels = VENDORS.filter(function(v){ return vt[v]>0; });
+  var values = labels.map(function(v){ return vt[v]; });
+  var rates  = labels.map(function(v){ return totalSales>0?((vt[v]/totalSales)*100).toFixed(1):'0.0'; });
+  var colors = labels.map(function(_,i){ return COLORS[i%COLORS.length]; });
+
+  if (charts.pie) charts.pie.destroy();
+  var ctx = document.getElementById('vendorPieChart').getContext('2d');
+  charts.pie = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff' }] },
+    options:{
+      cutout:'55%', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(item){ return ' '+labels[item.dataIndex]+': '+rates[item.dataIndex]+'%'; } } } }
+    }
+  });
+
+  document.getElementById('vendorPieLegend').innerHTML = labels.map(function(l,i){
+    return '<div class="pie-legend-item"><div class="pie-dot" style="background:'+colors[i]+'"></div><span>'+l+' <b>'+rates[i]+'%</b></span></div>';
+  }).join('');
+}
+
+function vendorKey(name) {
+  var map = {'마린푸드':'marinFood','스카이유통':'skyDist','수현물산':'suHyeon','음료':'beverage','주류':'liquor','식용유':'cookingOil','법인카드발주':'corpCard'};
+  return map[name];
+}
+
+// ── 상세 테이블 ───────────────────────────────────────────
+function renderTable(rows) {
+  var sorted = rows.slice().sort(function(a,b){ return new Date(b.entryDate)-new Date(a.entryDate); });
+  document.getElementById('tableCount').textContent = sorted.length+'건';
+
+  document.getElementById('tableBody').innerHTML = sorted.map(function(r) {
+    var rate = r.totalSales>0 ? ((r.dailyOrderTotal/r.totalSales)*100).toFixed(1) : '0.0';
+    var rateClass = Number(rate)<28?'good':Number(rate)<35?'warn':'bad';
+    return '<tr>'
+      +'<td class="td-date">'+r.entryDate+'</td>'
+      +'<td><span class="td-branch br-'+r.branch+'">'+r.branch+'</span></td>'
+      +'<td>'+r.userName+'</td>'
+      +'<td class="td-sales">'+fmtWon(r.totalSales)+'</td>'
+      +'<td class="td-sales" style="font-size:.85rem">'+fmtWon(r.netSales)+'</td>'
+      +'<td class="td-sales" style="font-size:.85rem">'+fmtWon(r.dailyOrderTotal)+'</td>'
+      +'<td class="td-rate '+rateClass+'">'+rate+'%</td>'
+      +'<td class="td-note">'+(r.note||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ── 유틸 ──────────────────────────────────────────────────
+function fmtWon(n){ return '₩'+Number(n||0).toLocaleString('ko-KR'); }
+function showLoading(t){ document.getElementById('loadingText').textContent=t;document.getElementById('loading').classList.add('show'); }
+function hideLoading(){ document.getElementById('loading').classList.remove('show'); }
+function showToast(msg){ var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800); }
+</script>
+</body>
+</html>

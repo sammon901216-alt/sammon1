@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#8b2c2c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="매출일보">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<title>매출일보</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f5f0e8;--surface:#fdfaf4;--border:#c8b99a;
+  --accent:#8b2c2c;--accent2:#2c4a6e;--text:#2a2015;
+  --muted:#7a6a52;--gold:#c49a3c;--green:#3a6b3a;
+  --shadow:rgba(42,32,21,.12);--radius:4px;
+  --font-serif:'Noto Serif KR',serif;--font-sans:'Noto Sans KR',sans-serif;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+}
+
+html{height:100%}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font-sans);
+  min-height:100%;padding-bottom:calc(20px + var(--sab));
+  -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+
+/* 헤더 */
+.app-header{
+  background:var(--accent);color:#fff;text-align:center;
+  padding:calc(14px + var(--sat)) 16px 14px;
+  border-bottom:3px solid var(--gold);
+  position:sticky;top:0;z-index:100;
+}
+.app-header h1{font-family:var(--font-serif);font-size:1.3rem;font-weight:700;letter-spacing:.15em}
+.app-header .subtitle{font-size:.72rem;opacity:.8;margin-top:3px;letter-spacing:.1em}
+.install-btn{
+  margin-top:10px;padding:6px 16px;
+  background:rgba(255,255,255,.15);color:#fff;
+  border:1px solid rgba(255,255,255,.4);border-radius:20px;
+  font-family:var(--font-sans);font-size:.78rem;letter-spacing:.05em;
+  cursor:pointer;transition:background .2s;-webkit-tap-highlight-color:transparent;
+}
+.install-btn:active{background:rgba(255,255,255,.28)}
+
+/* 스텝 */
+.step-indicator{display:flex;justify-content:center;align-items:center;padding:14px 16px 0}
+.step-dot{display:flex;align-items:center}
+.step-dot .dot{
+  width:28px;height:28px;border-radius:50%;border:2px solid var(--border);
+  background:var(--surface);color:var(--muted);font-size:.72rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;transition:all .3s;
+}
+.step-dot.active .dot{background:var(--accent);border-color:var(--accent);color:#fff}
+.step-dot.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+.step-line{width:40px;height:2px;background:var(--border);transition:background .3s}
+.step-line.done{background:var(--green)}
+
+/* 컨테이너 & 카드 */
+.container{max-width:520px;margin:16px auto 0;padding:0 14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 2px 8px var(--shadow);overflow:hidden;margin-bottom:14px}
+.card-header{background:var(--accent2);color:#fff;padding:10px 16px;font-family:var(--font-serif);font-size:.85rem;letter-spacing:.1em}
+.card-body{padding:16px}
+
+/* 폼 */
+.form-group{margin-bottom:13px}
+label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;letter-spacing:.05em}
+input[type=text],input[type=number],input[type=date],textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);
+  background:#fff;color:var(--text);font-family:var(--font-sans);font-size:16px;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;
+}
+input:focus,textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(44,74,110,.12)}
+input[type=number]{text-align:right}
+textarea{resize:vertical;min-height:80px}
+
+.branch-group{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.branch-btn{
+  padding:10px 4px;border:1px solid var(--border);border-radius:var(--radius);
+  background:#fff;color:var(--muted);font-size:.82rem;font-family:var(--font-sans);
+  cursor:pointer;transition:all .15s;text-align:center;user-select:none;
+}
+.branch-btn:active{transform:scale(.96)}
+.branch-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+
+.net-sales-display{
+  margin-top:6px;padding:9px 12px;background:#f0ebe0;
+  border-left:3px solid var(--gold);border-radius:var(--radius);
+  font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;
+}
+.net-sales-display .value{font-family:var(--font-serif);font-size:1rem;color:var(--accent2);font-weight:700}
+
+.vendor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:360px){.vendor-grid{grid-template-columns:1fr}}
+.unit-wrap{position:relative}
+.unit-wrap input{padding-right:28px}
+.unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.75rem;color:var(--muted);pointer-events:none}
+
+/* 버튼 */
+.btn{
+  display:block;width:100%;padding:14px;border:none;border-radius:var(--radius);
+  font-family:var(--font-serif);font-size:.95rem;letter-spacing:.1em;
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.btn:active{transform:scale(.98);opacity:.9}
+.btn-primary{background:var(--accent);color:#fff;border:1px solid #6b1f1f}
+.btn-submit{background:var(--accent2);color:#fff;border:1px solid #1a3352}
+.btn-secondary{background:var(--surface);color:var(--accent2);border:1px solid var(--accent2)}
+
+/* STEP2 통계 */
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px dashed var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{font-size:.82rem;color:var(--muted)}
+.stat-value{font-family:var(--font-serif);font-size:1.1rem;font-weight:700;color:var(--accent2)}
+.stat-value.big{font-size:1.35rem;color:var(--accent)}
+.stat-value.warn{color:#b85c00}
+
+.chart-wrap{position:relative;max-width:240px;margin:0 auto 12px}
+.chart-legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* STEP3 캡처 카드 */
+#capture-card{
+  background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);
+  padding:20px;font-family:var(--font-serif);position:relative;
+}
+#capture-card::before{
+  content:'';position:absolute;top:6px;left:6px;right:6px;bottom:6px;
+  border:1px solid var(--gold);pointer-events:none;border-radius:2px;
+}
+.capture-header{text-align:center;padding-bottom:12px;margin-bottom:12px;border-bottom:2px solid var(--border)}
+.capture-shop{font-size:1.1rem;font-weight:700;color:var(--accent);letter-spacing:.15em}
+.capture-meta{font-size:.75rem;color:var(--muted);margin-top:4px}
+.capture-divider{border:none;border-top:1px dashed var(--border);margin:12px 0}
+.capture-stat{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem}
+.capture-stat .cv{font-weight:700;color:var(--accent2)}
+.capture-note{font-size:.8rem;color:var(--muted);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+
+/* 히스토리 */
+.history-item{border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;margin-bottom:8px;background:#fff}
+.hi-date{font-size:.72rem;color:var(--muted)}
+.hi-sales{font-family:var(--font-serif);font-size:1rem;color:var(--accent2);font-weight:700;margin:2px 0}
+.hi-cost{font-size:.75rem;color:var(--muted)}
+
+/* 로딩 */
+.loading-overlay{
+  display:none;position:fixed;inset:0;background:rgba(245,240,232,.92);
+  z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.loading-overlay.show{display:flex}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:var(--font-serif);font-size:.85rem;color:var(--muted);letter-spacing:.1em}
+
+/* 토스트 */
+.toast{
+  position:fixed;bottom:calc(24px + var(--sab));left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--text);color:#fff;padding:10px 22px;border-radius:20px;
+  font-size:.82rem;transition:transform .3s;z-index:200;
+  white-space:nowrap;max-width:calc(100vw - 40px);text-align:center;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* 설치 안내 모달 */
+.install-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-end;justify-content:center}
+.install-modal.show{display:flex}
+.install-modal-card{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 20px calc(20px + var(--sab));width:100%;max-width:520px}
+.im-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.im-title{font-family:var(--font-serif);font-size:1rem;color:var(--accent);font-weight:700}
+.im-close{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px}
+.im-os-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:10px;margin-bottom:12px}
+.im-os-badge.android{background:#e8f5e9;color:#2e7d32}
+.im-os-badge.ios{background:#e3f2fd;color:#1565c0}
+.install-steps{list-style:none}
+.install-steps li{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:.85rem;line-height:1.5;color:var(--text)}
+.install-steps li:last-child{border-bottom:none}
+.install-steps .step-num{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;margin-top:1px}
+.im-tabs{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.im-tab{flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;color:var(--muted);font-size:.8rem;cursor:pointer;transition:all .15s}
+.im-tab.active{background:var(--accent2);border-color:var(--accent2);color:#fff;font-weight:600}
+.im-confirm{display:block;width:100%;margin-top:12px;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-serif);font-size:.95rem;letter-spacing:.08em;cursor:pointer}
+
+/* 오프라인 배너 */
+.offline-bar{
+  display:none;background:#b85c00;color:#fff;text-align:center;
+  font-size:.78rem;padding:6px;letter-spacing:.05em;
+}
+.offline-bar.show{display:block}
+
+
+/* ── 전년 동기 비교 ──────────────────────────────────────── */
+.yoy-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 2px 8px var(--shadow);overflow:hidden;margin-bottom:14px}
+.yoy-header{background:#4a3520;color:#fff;padding:10px 16px;font-family:var(--font-serif);font-size:.85rem;letter-spacing:.1em}
+.yoy-body{padding:12px 16px}
+.yoy-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.yoy-table th{padding:7px 10px;text-align:center;color:var(--muted);font-weight:500;font-size:.72rem;border-bottom:1px solid var(--border);letter-spacing:.04em}
+.yoy-table th:first-child{text-align:left}
+.yoy-table td{padding:8px 10px;text-align:center;border-bottom:1px dashed var(--border);font-family:var(--font-serif)}
+.yoy-table td:first-child{text-align:left;font-family:var(--font-sans);font-size:.78rem;color:var(--muted)}
+.yoy-table tr:last-child td{border-bottom:none}
+.yoy-table .cur{color:var(--accent2);font-weight:700}
+.yoy-table .pre{color:var(--muted)}
+.diff-up{color:#2e7d32;font-weight:700;font-size:.78rem}
+.diff-dn{color:#c62828;font-weight:700;font-size:.78rem}
+.diff-eq{color:var(--muted);font-size:.78rem}
+.yoy-loading{text-align:center;padding:16px;color:var(--muted);font-size:.8rem}
+
+
+/* ── 근무자 입력 ─────────────────────────────────────────── */
+.staff-list { display:flex; flex-direction:column; gap:8px; }
+.staff-row {
+  display:grid;
+  grid-template-columns: 1fr 80px 1fr;
+  gap:6px;
+  align-items:center;
+  background:#faf7f2;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:8px 10px;
+}
+.staff-row input[type=text] {
+  padding:7px 10px;
+  font-size:15px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:#fff;
+}
+.staff-row select {
+  padding:7px 6px;
+  font-size:13px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:#fff;
+  color:var(--text);
+  -webkit-appearance:none;
+  appearance:none;
+  text-align:center;
+}
+.staff-row .remove-btn {
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:1.1rem;
+  cursor:pointer;
+  padding:4px;
+  line-height:1;
+  align-self:center;
+  justify-self:end;
+}
+.staff-row .remove-btn:active { color:var(--accent); }
+.staff-col-labels {
+  display:grid;
+  grid-template-columns:1fr 80px 1fr;
+  gap:6px;
+  padding:0 10px;
+  margin-bottom:4px;
+}
+.staff-col-labels span {
+  font-size:.68rem;
+  color:var(--muted);
+  letter-spacing:.04em;
+}
+.add-staff-btn {
+  width:100%;
+  padding:9px;
+  background:#f5f0e8;
+  border:1px dashed var(--border);
+  border-radius:var(--radius);
+  color:var(--muted);
+  font-size:.82rem;
+  cursor:pointer;
+  margin-top:4px;
+  transition:all .15s;
+}
+.add-staff-btn:active { background:#ebe5d8; }
+
+/* 캡처카드 근무자 */
+.cap-staff-section {
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px dashed var(--border);
+}
+.cap-staff-title {
+  font-family:var(--font-serif);
+  font-size:.82rem;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:6px;
+  letter-spacing:.08em;
+  text-align:center;
+}
+.cap-staff-row {
+  font-size:.78rem;
+  color:var(--text);
+  line-height:1.8;
+  word-break:keep-all;
+}
+.cap-staff-row b { color:var(--accent2); }
+
+.hidden{display:none !important}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}
+.section-title{font-family:var(--font-serif);font-size:.8rem;color:var(--accent);border-left:3px solid var(--gold);padding-left:8px;margin-bottom:12px;letter-spacing:.08em}
+</style>
+</head>
+<body>
+
+<!-- 오프라인 배너 -->
+<div class="offline-bar" id="offlineBar">📡 오프라인 상태입니다. 네트워크를 확인해 주세요.</div>
+
+<!-- 로딩 -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">잠시만 기다려 주세요…</div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- 설치 안내 모달 -->
+<div class="install-modal" id="installModal" onclick="closeInstallModal(event)">
+  <div class="install-modal-card">
+    <div class="im-header">
+      <span class="im-title">📲 홈 화면에 추가하기</span>
+      <button class="im-close" onclick="closeInstallModal()">✕</button>
+    </div>
+    <div id="guideAndroid">
+      <div class="im-os-badge android">Android · Chrome</div>
+      <ul class="install-steps">
+        <li><span class="step-num">1</span><span>Chrome 주소창 오른쪽 <b>⋮ (더보기)</b> 탭</span></li>
+        <li><span class="step-num">2</span><span><b>"홈 화면에 추가"</b> 탭</span></li>
+        <li><span class="step-num">3</span><span>이름 확인 후 <b>"추가"</b> 탭하면 완료!</span></li>
+      </ul>
+    </div>
+    <div id="guideIos" class="hidden">
+      <div class="im-os-badge ios">iPhone · Safari</div>
+      <ul class="install-steps">
+        <li><span class="step-num">1</span><span>Safari 하단 <b>공유 버튼 (□↑)</b> 탭</span></li>
+        <li><span class="step-num">2</span><span><b>"홈 화면에 추가"</b> 탭</span></li>
+        <li><span class="step-num">3</span><span>우측 상단 <b>"추가"</b> 탭하면 완료!</span></li>
+      </ul>
+    </div>
+    <div class="im-tabs">
+      <button class="im-tab active" id="tabAndroid" onclick="switchGuide('android')">🤖 Android</button>
+      <button class="im-tab" id="tabIos" onclick="switchGuide('ios')">🍎 iPhone</button>
+    </div>
+    <button class="im-confirm" onclick="closeInstallModal()">확인</button>
+  </div>
+</div>
+
+<!-- 헤더 -->
+<header class="app-header">
+  <h1>🍽 매출일보</h1>
+  <div class="subtitle">日別 売上 日報 システム</div>
+  <button class="install-btn" id="installBtn" onclick="showInstallGuide()">📲 앱으로 설치</button>
+</header>
+
+<!-- 스텝 인디케이터 -->
+<div class="step-indicator">
+  <div class="step-dot active" id="sd1"><div class="dot">1</div></div>
+  <div class="step-line" id="sl1"></div>
+  <div class="step-dot" id="sd2"><div class="dot">2</div></div>
+  <div class="step-line" id="sl2"></div>
+  <div class="step-dot" id="sd3"><div class="dot">3</div></div>
+</div>
+
+<div class="container">
+
+  <!-- STEP 1 -->
+  <div id="step1">
+    <div class="card mt-12">
+      <div class="card-header">📋 기본 정보</div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>지점 선택</label>
+          <div class="branch-group">
+            <button class="branch-btn" onclick="selectBranch(this,'경기점')">경기점</button>
+            <button class="branch-btn" onclick="selectBranch(this,'노원점')">노원점</button>
+            <button class="branch-btn" onclick="selectBranch(this,'파주점')">파주점</button>
+            <button class="branch-btn" onclick="selectBranch(this,'고양점')">고양점</button>
+            <button class="branch-btn" onclick="selectBranch(this,'마곡점')">마곡점</button>
+            <button class="branch-btn" onclick="selectBranch(this,'연세점')">연세점</button>
+          </div>
+          <input type="hidden" id="branchVal">
+        </div>
+        <div class="form-group">
+          <label>사용자명</label>
+          <input type="text" id="userName" placeholder="이름을 입력하세요" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label>기입일</label>
+          <input type="date" id="entryDate">
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header">👥 근무자 현황</div>
+      <div class="card-body">
+        <div class="staff-col-labels">
+          <span>이름</span>
+          <span style="text-align:center">직무</span>
+          <span style="text-align:center">근무상태</span>
+        </div>
+        <div class="staff-list" id="staffList">
+          <!-- 근무자 행은 JS로 추가 -->
+        </div>
+        <button class="add-staff-btn" onclick="addStaffRow()">＋ 근무자 추가</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📈 매출 현황</div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>당일 총매출</label>
+          <div class="unit-wrap">
+            <input type="number" id="totalSales" placeholder="0" inputmode="numeric" oninput="calcNetSales()">
+            <span class="unit">원</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>할인액</label>
+          <div class="unit-wrap">
+            <input type="number" id="discount" placeholder="0" inputmode="numeric" oninput="calcNetSales()">
+            <span class="unit">원</span>
+          </div>
+        </div>
+        <div class="net-sales-display">
+          <span>순매출 (총매출 − 할인)</span>
+          <span class="value" id="netSalesDisplay">0원</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🚚 발주 입고액</div>
+      <div class="card-body">
+        <div class="vendor-grid">
+          <div class="form-group"><label>마린푸드</label><div class="unit-wrap"><input type="number" id="marinFood" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>스카이유통</label><div class="unit-wrap"><input type="number" id="skyDist" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>수현물산</label><div class="unit-wrap"><input type="number" id="suHyeon" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>음료</label><div class="unit-wrap"><input type="number" id="beverage" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>주류</label><div class="unit-wrap"><input type="number" id="liquor" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>식용유</label><div class="unit-wrap"><input type="number" id="cookingOil" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group" style="grid-column:span 2"><label>법인카드발주</label><div class="unit-wrap"><input type="number" id="corpCard" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitStep1()">✅ 작성완료</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="hidden">
+    <div class="card mt-12">
+      <div class="card-header">📊 당월 누적 현황</div>
+      <div class="card-body">
+        <div class="stat-row"><span class="stat-label">누적 총매출</span><span class="stat-value big" id="s2TotalSales">—</span></div>
+        <div class="stat-row"><span class="stat-label">누적 순매출</span><span class="stat-value" id="s2NetSales">—</span></div>
+        <div class="stat-row"><span class="stat-label">누적 총발주액</span><span class="stat-value" id="s2TotalOrder">—</span></div>
+        <div class="stat-row"><span class="stat-label">누적 원가율</span><span class="stat-value warn" id="s2CostRate">—</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">🥧 업체별 누적 발주 원가율</div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="vendorChart"></canvas></div>
+        <div class="chart-legend" id="chartLegend"></div>
+      </div>
+    </div>
+    <div class="yoy-card" id="yoyCard">
+      <div class="yoy-header">📅 전년 동기 비교</div>
+      <div class="yoy-body" id="yoyBody">
+        <div class="yoy-loading">불러오는 중…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">📝 특이사항</div>
+      <div class="card-body">
+        <textarea id="noteInput" placeholder="당일 특이사항을 자유롭게 입력하세요&#10;(예: 단체 예약, 기기 고장, 식재료 부족 등)"></textarea>
+        <div class="mt-8"><button class="btn btn-submit" onclick="submitStep2()">📤 제출</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3" class="hidden">
+    <div class="card mt-12">
+      <div class="card-header">✅ 제출 완료 — 아래를 캡처하세요</div>
+      <div class="card-body">
+        <div id="capture-card">
+          <div class="capture-header">
+            <div class="capture-shop" id="capBranch">—</div>
+            <div class="capture-meta"><span id="capDate">—</span> &nbsp;·&nbsp; 담당: <span id="capUser">—</span></div>
+          </div>
+          <div class="capture-stat"><span>누적 총매출</span><span class="cv" id="capTotalSales">—</span></div>
+          <div class="capture-stat"><span>누적 순매출</span><span class="cv" id="capNetSales">—</span></div>
+          <div class="capture-stat"><span>누적 원가율</span><span class="cv" id="capCostRate">—</span></div>
+          <hr class="capture-divider">
+          <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px">업체별 누적 발주 원가율</div>
+          <div class="chart-wrap" style="max-width:200px"><canvas id="captureChart"></canvas></div>
+          <div class="chart-legend" id="captureLegend" style="margin-top:8px"></div>
+          <div class="capture-note" id="capNote" style="display:none"></div>
+          <div class="cap-staff-section" id="capStaffSection" style="display:none">
+            <div class="cap-staff-title" id="capStaffTitle"></div>
+            <div class="cap-staff-row" id="capStaffBody"></div>
+          </div>
+        </div>
+        <div class="mt-12"><button class="btn btn-secondary" onclick="toggleHistory()">📋 히스토리 보기</button></div>
+        <div id="historyWrap" class="hidden mt-8">
+          <div class="section-title">최근 30건 기록</div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary mt-8" onclick="resetApp()">➕ 새 일보 작성</button>
+  </div>
+
+</div>
+
+<script>
+// ══ 설정: Apps Script 웹앱 URL을 여기에 입력 ══════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec'; // ★ 여기에 Apps Script exec URL 입력 필수!
+// ═════════════════════════════════════════════════════════
+
+const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','법인카드발주'];
+const COLORS  = ['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#2c6e6b'];
+
+let state = {
+  recordId:null, branch:'', userName:'', entryDate:'',
+  accumulated:null, chartInstance:null, captureChartInstance:null,
+};
+
+
+// ── 근무자 관리 ───────────────────────────────────────────
+var staffRowCount = 0;
+
+function addStaffRow(name, role, status) {
+  staffRowCount++;
+  var id = staffRowCount;
+  var row = document.createElement('div');
+  row.className = 'staff-row';
+  row.id = 'staffRow-' + id;
+
+  var statusOptions = ['근무','반휴','반연차'];
+  var roleOptions   = ['FOH','BOH'];
+
+  row.innerHTML =
+    '<input type="text" placeholder="이름" value="'+(name||'')+'" class="staff-name">' +
+    '<select class="staff-role">' +
+      roleOptions.map(function(r){ return '<option value="'+r+'"'+(r===(role||'FOH')?' selected':'')+'>'+r+'</option>'; }).join('') +
+    '</select>' +
+    '<select class="staff-status">' +
+      statusOptions.map(function(s){ return '<option value="'+s+'"'+(s===(status||'근무')?' selected':'')+'>'+s+'</option>'; }).join('') +
+    '</select>' +
+    '<button class="remove-btn" onclick="removeStaffRow('+id+')">✕</button>';
+
+  document.getElementById('staffList').appendChild(row);
+}
+
+function removeStaffRow(id) {
+  var el = document.getElementById('staffRow-' + id);
+  if (el) el.remove();
+}
+
+function getStaffData() {
+  var rows = document.querySelectorAll('#staffList .staff-row');
+  var result = [];
+  rows.forEach(function(row) {
+    var name   = row.querySelector('.staff-name').value.trim();
+    var role   = row.querySelector('.staff-role').value;
+    var status = row.querySelector('.staff-status').value;
+    if (name) result.push({ name:name, role:role, status:status });
+  });
+  return result;
+}
+
+// 캡처카드 근무자 렌더링 (근무/반휴/반연차만 표시)
+function renderCapStaff(staffData, branch, entryDate) {
+  var working = staffData.filter(function(s){
+    return s.status === '근무' || s.status === '반휴' || s.status === '반연차';
+  });
+
+  if (working.length === 0) {
+    document.getElementById('capStaffSection').style.display = 'none';
+    return;
+  }
+
+  // 날짜 포맷 (YYYY-MM-DD → YY년MM월DD일)
+  var parts = String(entryDate).split('-');
+  var dateLabel = parts[0].slice(2)+'년'+parts[1]+'월'+parts[2]+'일';
+  document.getElementById('capStaffTitle').textContent =
+    '[' + branch + ' ' + dateLabel + ' 근무자보고]';
+
+  // FOH / BOH 분류
+  var foh = working.filter(function(s){ return s.role === 'FOH'; });
+  var boh = working.filter(function(s){ return s.role === 'BOH'; });
+
+  function formatGroup(arr) {
+    return arr.map(function(s){ return s.name+'('+s.status+')'; }).join(', ');
+  }
+
+  var html = '';
+  if (foh.length > 0) html += '<div><b>FOH</b> : ' + formatGroup(foh) + '</div>';
+  if (boh.length > 0) html += '<div><b>BOH</b> : ' + formatGroup(boh) + '</div>';
+
+  document.getElementById('capStaffBody').innerHTML = html;
+  document.getElementById('capStaffSection').style.display = 'block';
+}
+
+// ── 서비스워커 등록 ──────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sammon1/sw.js').then(function(reg) {
+      console.log('SW 등록 완료:', reg.scope);
+    }).catch(function(err) {
+      console.log('SW 등록 실패:', err);
+    });
+  });
+}
+
+// ── 오프라인 감지 ─────────────────────────────────────────
+window.addEventListener('online',  function() { document.getElementById('offlineBar').classList.remove('show'); });
+window.addEventListener('offline', function() { document.getElementById('offlineBar').classList.add('show'); });
+
+// ── PWA 설치 안내 ─────────────────────────────────────────
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+window.addEventListener('load', function() {
+  if (isStandalone()) document.getElementById('installBtn').style.display = 'none';
+});
+function showInstallGuide() {
+  switchGuide(isIOS() ? 'ios' : 'android');
+  document.getElementById('installModal').classList.add('show');
+}
+function closeInstallModal(e) {
+  if (!e || e.target === document.getElementById('installModal')) {
+    document.getElementById('installModal').classList.remove('show');
+  }
+}
+function switchGuide(os) {
+  var isAnd = os === 'android';
+  document.getElementById('guideAndroid').classList.toggle('hidden', !isAnd);
+  document.getElementById('guideIos').classList.toggle('hidden', isAnd);
+  document.getElementById('tabAndroid').classList.toggle('active', isAnd);
+  document.getElementById('tabIos').classList.toggle('active', !isAnd);
+}
+
+// ── 초기화 ────────────────────────────────────────────────
+window.onload = function() {
+  var t = new Date();
+  document.getElementById('entryDate').value =
+    t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  addStaffRow(); // 기본 1행 추가
+};
+
+// ── 지점 선택 ─────────────────────────────────────────────
+function selectBranch(el, name) {
+  document.querySelectorAll('.branch-btn').forEach(function(b){b.classList.remove('selected');});
+  el.classList.add('selected');
+  document.getElementById('branchVal').value = name;
+  state.branch = name;
+}
+
+// ── 순매출 계산 ───────────────────────────────────────────
+function calcNetSales() {
+  var t = Number(document.getElementById('totalSales').value)||0;
+  var d = Number(document.getElementById('discount').value)||0;
+  document.getElementById('netSalesDisplay').textContent = fmtWon(t-d);
+}
+
+// ── API 호출 헬퍼 ─────────────────────────────────────────
+function callAPI(action, params) {
+  var url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.keys(params).forEach(function(k){ url.searchParams.set(k, JSON.stringify(params[k])); });
+  return fetch(url.toString()).then(function(r){ return r.json(); });
+}
+
+// ── STEP 1 제출 ───────────────────────────────────────────
+function submitStep1() {
+  var branch    = document.getElementById('branchVal').value;
+  var userName  = document.getElementById('userName').value.trim();
+  var entryDate = document.getElementById('entryDate').value;
+  var totalSales= document.getElementById('totalSales').value;
+
+  if (!branch)                                { showToast('지점을 선택해 주세요.'); return; }
+  if (!userName)                              { showToast('사용자명을 입력해 주세요.'); return; }
+  if (!entryDate)                             { showToast('기입일을 선택해 주세요.'); return; }
+  if (!totalSales || Number(totalSales) <= 0) { showToast('당일 총매출을 입력해 주세요.'); return; }
+
+  state.branch = branch; state.userName = userName; state.entryDate = entryDate;
+
+  var data = {
+    branch:branch, userName:userName, entryDate:entryDate,
+    totalSales:totalSales,
+    discount:   document.getElementById('discount').value||0,
+    marinFood:  document.getElementById('marinFood').value||0,
+    skyDist:    document.getElementById('skyDist').value||0,
+    suHyeon:    document.getElementById('suHyeon').value||0,
+    beverage:   document.getElementById('beverage').value||0,
+    liquor:     document.getElementById('liquor').value||0,
+    cookingOil: document.getElementById('cookingOil').value||0,
+    corpCard:   document.getElementById('corpCard').value||0,
+  };
+
+  showLoading('데이터 저장 중…');
+  callAPI('saveRecord', {data: data})
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('오류: '+res.error); return; }
+      state.recordId    = res.recordId;
+      state.accumulated = res.accumulated;
+      renderStep2(res.accumulated);
+      goStep(2);
+    })
+    .catch(function(e) { hideLoading(); showToast('서버 오류: '+e.message); });
+}
+
+// ── STEP 2 렌더링 ─────────────────────────────────────────
+function renderStep2(acc) {
+  document.getElementById('s2TotalSales').textContent = fmtWon(acc.totalSales);
+  document.getElementById('s2NetSales').textContent   = fmtWon(acc.totalNetSales);
+  document.getElementById('s2TotalOrder').textContent = fmtWon(acc.totalOrderAmt);
+  document.getElementById('s2CostRate').textContent   = acc.costRate+'%';
+  drawChart('vendorChart', acc, 'chartLegend', 'chartInstance');
+  loadYoy();
+}
+
+// ── 전년 동기 비교 로드 ────────────────────────────────────
+function loadYoy() {
+  var url = new URL(API_URL);
+  url.searchParams.set('action', 'getYoyData');
+  url.searchParams.set('branch', JSON.stringify(state.branch));
+  url.searchParams.set('entryDate', JSON.stringify(state.entryDate));
+
+  fetch(url.toString())
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (!res.success) { document.getElementById('yoyBody').innerHTML='<div class="yoy-loading">데이터 없음</div>'; return; }
+      renderYoy(res);
+    })
+    .catch(function(){ document.getElementById('yoyBody').innerHTML='<div class="yoy-loading">불러오기 실패</div>'; });
+}
+
+function renderYoy(res) {
+  var c = res.current, p = res.previous;
+  var curLabel = res.curYear+'년 '+res.month+'월 1일~'+res.day+'일';
+  var preLabel = res.preYear+'년 '+res.month+'월 1일~'+res.day+'일';
+
+  function diffHtml(cur, pre) {
+    if (!pre || pre === 0) return '<span class="diff-eq">—</span>';
+    var pct = ((cur - pre) / pre * 100).toFixed(1);
+    if (cur > pre) return '<span class="diff-up">▲'+pct+'%</span>';
+    if (cur < pre) return '<span class="diff-dn">▼'+Math.abs(pct)+'%</span>';
+    return '<span class="diff-eq">±0%</span>';
+  }
+  function diffPt(cur, pre) {
+    if (!pre || pre === 0) return '<span class="diff-eq">—</span>';
+    var pt = (Number(cur) - Number(pre)).toFixed(1);
+    if (pt > 0) return '<span class="diff-dn">▲'+pt+'%p</span>';
+    if (pt < 0) return '<span class="diff-up">▼'+Math.abs(pt)+'%p</span>';
+    return '<span class="diff-eq">±0</span>';
+  }
+
+  var html = '<table class="yoy-table">'
+    +'<thead><tr><th>항목</th><th>올해 ('+res.curYear+')</th><th>작년 ('+res.preYear+')</th><th>증감</th></tr></thead>'
+    +'<tbody>'
+    +'<tr><td>누적 총매출</td><td class="cur">'+fmtWon(c.totalSales)+'</td><td class="pre">'+fmtWon(p.totalSales)+'</td><td>'+diffHtml(c.totalSales,p.totalSales)+'</td></tr>'
+    +'<tr><td>누적 순매출</td><td class="cur">'+fmtWon(c.totalNet)+'</td><td class="pre">'+fmtWon(p.totalNet)+'</td><td>'+diffHtml(c.totalNet,p.totalNet)+'</td></tr>'
+    +'<tr><td>누적 발주액</td><td class="cur">'+fmtWon(c.totalOrder)+'</td><td class="pre">'+fmtWon(p.totalOrder)+'</td><td>'+diffHtml(c.totalOrder,p.totalOrder)+'</td></tr>'
+    +'<tr><td>누적 원가율</td><td class="cur">'+c.costRate+'%</td><td class="pre">'+p.costRate+'%</td><td>'+diffPt(c.costRate,p.costRate)+'</td></tr>'
+    +'</tbody></table>'
+    +'<div style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:right">기준: '+curLabel+' vs '+preLabel+'</div>';
+
+  document.getElementById('yoyBody').innerHTML = html;
+}
+
+// ── STEP 2 제출 ───────────────────────────────────────────
+function submitStep2() {
+  var note = document.getElementById('noteInput').value.trim();
+  showLoading('저장 중…');
+  callAPI('updateNote', {recordId: state.recordId, note: note})
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('저장 오류: '+res.error); return; }
+      renderStep3(note);
+      goStep(3);
+    })
+    .catch(function(e) { hideLoading(); showToast('서버 오류: '+e.message); });
+}
+
+// ── STEP 3 렌더링 ─────────────────────────────────────────
+function renderStep3(note) {
+  var acc = state.accumulated;
+  document.getElementById('capBranch').textContent     = state.branch+' 매출일보';
+  document.getElementById('capDate').textContent       = state.entryDate;
+  document.getElementById('capUser').textContent       = state.userName;
+  document.getElementById('capTotalSales').textContent = fmtWon(acc.totalSales);
+  document.getElementById('capNetSales').textContent   = fmtWon(acc.totalNetSales);
+  document.getElementById('capCostRate').textContent   = acc.costRate+'%';
+  var noteEl = document.getElementById('capNote');
+  if (note) { noteEl.textContent='특이사항: '+note; noteEl.style.display='block'; }
+  else       { noteEl.style.display='none'; }
+  setTimeout(function(){ drawChart('captureChart', acc, 'captureLegend', 'captureChartInstance'); }, 150);
+
+  // 근무자 보고
+  var staffData = getStaffData();
+  renderCapStaff(staffData, state.branch, state.entryDate);
+}
+
+// ── 파이 차트 ─────────────────────────────────────────────
+function drawChart(canvasId, acc, legendId, key) {
+  var labels = VENDORS.filter(function(v){ return (acc.vendorTotals[v]||0)>0; });
+  var values = labels.map(function(v){ return acc.vendorTotals[v]; });
+  var rates  = labels.map(function(v){ return acc.vendorRates[v]; });
+  var colors = labels.map(function(_,i){ return COLORS[i%COLORS.length]; });
+  if (state[key]) { state[key].destroy(); state[key] = null; }
+  // 혹시 남아있는 차트 인스턴스 제거
+  var existingChart = Chart.getChart(canvasId);
+  if (existingChart) existingChart.destroy();
+  var ctx = document.getElementById(canvasId).getContext('2d');
+  state[key] = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:colors,borderWidth:2,borderColor:'#fdfaf4'}]},
+    options:{cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(item){
+      var i=item.dataIndex;
+      return ' '+labels[i]+': '+fmtWon(values[i])+' ('+rates[i]+'%)';
+    }}}}}
+  });
+  document.getElementById(legendId).innerHTML = labels.map(function(l,i){
+    return '<div class="legend-item"><div class="legend-dot" style="background:'+colors[i]+'"></div><span>'+l+' <b>'+rates[i]+'%</b></span></div>';
+  }).join('');
+}
+
+// ── 히스토리 ──────────────────────────────────────────────
+var historyVisible = false;
+function toggleHistory() {
+  var wrap = document.getElementById('historyWrap');
+  if (!historyVisible) {
+    showLoading('히스토리 불러오는 중…');
+    callAPI('getHistory', {branch: state.branch})
+      .then(function(res) {
+        hideLoading();
+        if (!res.success) { showToast('오류: '+res.error); return; }
+        renderHistory(res.rows);
+        wrap.classList.remove('hidden');
+        historyVisible = true;
+      })
+      .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+  } else {
+    wrap.classList.add('hidden');
+    historyVisible = false;
+  }
+}
+
+function renderHistory(rows) {
+  var el = document.getElementById('historyList');
+  if (!rows||rows.length===0) {
+    el.innerHTML='<p style="color:var(--muted);font-size:.82rem;text-align:center;padding:20px 0">기록이 없습니다.</p>';
+    return;
+  }
+  el.innerHTML = rows.map(function(r) {
+    var rate = r.totalSales>0 ? ((r.dailyOrderTotal/r.totalSales)*100).toFixed(1)+'%' : '—';
+    return '<div class="history-item">'
+      +'<div class="hi-date">'+r.entryDate+' · '+r.userName+'</div>'
+      +'<div class="hi-sales">'+fmtWon(r.totalSales)+'</div>'
+      +'<div class="hi-cost">당일 원가율 '+rate+' | 발주합계 '+fmtWon(r.dailyOrderTotal)+'</div>'
+      +(r.note?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">📌 '+r.note+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ── 스텝 전환 ─────────────────────────────────────────────
+function goStep(n) {
+  ['step1','step2','step3'].forEach(function(id,i){ document.getElementById(id).classList.toggle('hidden',i!==n-1); });
+  for(var i=1;i<=3;i++){
+    var d=document.getElementById('sd'+i);d.classList.remove('active','done');
+    if(i<n)d.classList.add('done');if(i===n)d.classList.add('active');
+  }
+  for(var j=1;j<=2;j++) document.getElementById('sl'+j).classList.toggle('done',j<n);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── 리셋 ──────────────────────────────────────────────────
+function resetApp() {
+  // 차트 먼저 제거 (Canvas already in use 오류 방지)
+  if (state.chartInstance)        { state.chartInstance.destroy();        state.chartInstance = null; }
+  if (state.captureChartInstance) { state.captureChartInstance.destroy(); state.captureChartInstance = null; }
+  // Chart.js 전역 등록 인스턴스 모두 제거
+  Object.keys(Chart.instances || {}).forEach(function(k){ try{ Chart.instances[k].destroy(); }catch(e){} });
+  state={recordId:null,branch:'',userName:'',entryDate:'',accumulated:null,chartInstance:null,captureChartInstance:null};
+  ['totalSales','discount','marinFood','skyDist','suHyeon','beverage','liquor','cookingOil','corpCard','userName'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  document.getElementById('netSalesDisplay').textContent='0원';
+  document.getElementById('noteInput').value='';
+  document.getElementById('branchVal').value='';
+  document.querySelectorAll('.branch-btn').forEach(function(b){b.classList.remove('selected');});
+  historyVisible=false;
+  // 근무자 초기화
+  document.getElementById('staffList').innerHTML = '';
+  staffRowCount = 0;
+  addStaffRow(); // 기본 1행
+  var t=new Date();
+  document.getElementById('entryDate').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  goStep(1);
+}
+
+// ── 유틸 ──────────────────────────────────────────────────
+function fmtWon(n){ return '₩'+Number(n).toLocaleString('ko-KR')+'원'; }
+function showLoading(txt){ document.getElementById('loadingText').textContent=txt||'잠시만 기다려 주세요…';document.getElementById('loading').classList.add('show'); }
+function hideLoading(){ document.getElementById('loading').classList.remove('show'); }
+function showToast(msg){ var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800); }
+</script>
+</body>
+</html>
