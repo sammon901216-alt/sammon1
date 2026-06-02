@@ -5,7 +5,6 @@ self.addEventListener('install', function(e) {
 });
 
 self.addEventListener('activate', function(e) {
-  // 기존 캐시 전부 삭제
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(keys.map(function(k) { return caches.delete(k); }));
@@ -15,6 +14,5 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  // 캐시 없이 항상 네트워크에서 가져옴
   e.respondWith(fetch(e.request));
 });
