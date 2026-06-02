@@ -2,20 +2,20 @@
   "name": "매출일보",
   "short_name": "매출일보",
   "description": "일식 요식업 매출일보 관리 시스템",
-  "start_url": "/sammon1/",
+  "start_url": "/sammon1/매출일보/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#8b2c2c",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/sammon1/icon-192.png",
+      "src": "/sammon1/매출일보/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/sammon1/icon-512.png",
+      "src": "/sammon1/매출일보/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
