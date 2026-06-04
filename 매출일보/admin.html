@@ -505,9 +505,10 @@ function renderSchedule(rows) {
 
   // 상태 배지
   function badge(status) {
-    var code = status.split('(')[0];
+    var s = String(status || '');
+    var code = s.split('(')[0];
     var cls = {'1':'sb-1','H':'sb-H','0':'sb-0','HY':'sb-HY','Y':'sb-Y'}[code] || 'sb-etc';
-    return '<span class="status-badge '+cls+'">'+status+'</span>';
+    return '<span class="status-badge '+cls+'">'+s+'</span>';
   }
 
   document.getElementById('scheduleBody').innerHTML = rows.map(function(r){
@@ -526,7 +527,7 @@ function renderSchedule(rows) {
   rows.forEach(function(r){
     var key = r.staffName + '|' + r.role;
     if (!stats[key]) stats[key] = {name:r.staffName, role:r.role, '1':0,'H':0,'0':0,'HY':0,'Y':0,etc:0};
-    var code = r.status.split('(')[0];
+    var code = String(r.status || '').split('(')[0];
     if (stats[key][code] !== undefined) stats[key][code]++;
     else stats[key].etc++;
   });
