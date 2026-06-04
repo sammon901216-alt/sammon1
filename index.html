@@ -554,7 +554,7 @@ function addStaffRow(name, role, status) {
   row.className = 'staff-row';
   row.id = 'staffRow-' + id;
 
-  var statusOptions = ['근무','반휴','반연차'];
+  var statusOptions = ['1(근무)','H(반차)','0(휴무)','HY(반차연차)','Y(연차)','훈련'];
   var roleOptions   = ['FOH','BOH'];
 
   row.innerHTML =
@@ -590,7 +590,7 @@ function getStaffData() {
 // 캡처카드 근무자 렌더링 (근무/반휴/반연차만 표시)
 function renderCapStaff(staffData, branch, entryDate) {
   var working = staffData.filter(function(s){
-    return s.status === '근무' || s.status === '반휴' || s.status === '반연차';
+    return s.status === '1(근무)' || s.status === 'H(반차)' || s.status === 'HY(반차연차)';
   });
 
   if (working.length === 0) {
@@ -609,7 +609,10 @@ function renderCapStaff(staffData, branch, entryDate) {
   var boh = working.filter(function(s){ return s.role === 'BOH'; });
 
   function formatGroup(arr) {
-    return arr.map(function(s){ return s.name+'('+s.status+')'; }).join(', ');
+    return arr.map(function(s){
+      var code = s.status.split('(')[0]; // 1, H, HY만 추출
+      return s.name+'('+code+')';
+    }).join(', ');
   }
 
   var html = '';
@@ -716,6 +719,7 @@ function submitStep1() {
     liquor:     document.getElementById('liquor').value||0,
     cookingOil: document.getElementById('cookingOil').value||0,
     corpCard:   document.getElementById('corpCard').value||0,
+    staffList:  getStaffData(),
   };
 
   showLoading('데이터 저장 중…');
