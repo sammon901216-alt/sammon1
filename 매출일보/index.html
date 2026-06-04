@@ -309,6 +309,29 @@ textarea{resize:vertical;min-height:80px}
 }
 .cap-staff-row b { color:var(--accent2); }
 
+
+/* ── PT 근무자 ── */
+.staff-row.pt-row {
+  grid-template-columns: 1fr 80px 80px 80px 80px;
+  background:#fdf6e3;
+}
+.pt-pay-display {
+  font-size:.75rem;
+  color:var(--accent2);
+  font-weight:700;
+  text-align:right;
+  padding:4px 6px;
+  background:#fff8e1;
+  border-radius:var(--radius);
+  border:1px solid #ffe082;
+  white-space:nowrap;
+}
+.pt-label {
+  font-size:.68rem;
+  color:var(--muted);
+  margin-bottom:2px;
+}
+
 .hidden{display:none !important}
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}
 .section-title{font-family:var(--font-serif);font-size:.8rem;color:var(--accent);border-left:3px solid var(--gold);padding-left:8px;margin-bottom:12px;letter-spacing:.08em}
@@ -411,7 +434,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="card-body">
         <div class="staff-col-labels">
           <span>이름</span>
-          <span style="text-align:center">직무</span>
+          <span style="text-align:center">직무(FOH/BOH/PT)</span>
           <span style="text-align:center">근무상태</span>
         </div>
         <div class="staff-list" id="staffList">
@@ -555,19 +578,53 @@ function addStaffRow(name, role, status) {
   row.id = 'staffRow-' + id;
 
   var statusOptions = ['1(근무)','H(반차)','0(휴무)','HY(반차연차)','Y(연차)','훈련'];
-  var roleOptions   = ['FOH','BOH'];
+  var roleOptions   = ['FOH','BOH','PT'];
+  var isPT = (role === 'PT');
 
   row.innerHTML =
     '<input type="text" placeholder="이름" value="'+(name||'')+'" class="staff-name">' +
-    '<select class="staff-role">' +
+    '<select class="staff-role" onchange="onRoleChange(this,'+ id +')">' +
       roleOptions.map(function(r){ return '<option value="'+r+'"'+(r===(role||'FOH')?' selected':'')+'>'+r+'</option>'; }).join('') +
     '</select>' +
-    '<select class="staff-status">' +
-      statusOptions.map(function(s){ return '<option value="'+s+'"'+(s===(status||'근무')?' selected':'')+'>'+s+'</option>'; }).join('') +
-    '</select>' +
+    (!isPT ?
+      '<select class="staff-status">' +
+        statusOptions.map(function(s){ return '<option value="'+s+'"'+(s===(status||'1(근무)')?' selected':'')+'>'+s+'</option>'; }).join('') +
+      '</select>'
+    :
+      '<div style="display:flex;flex-direction:column;gap:3px">' +
+        '<div class="pt-label">시급(원)</div>' +
+        '<input type="number" class="staff-wage" placeholder="시급" inputmode="numeric" style="padding:5px 8px;font-size:13px" oninput="calcPTPay('+id+')">' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:3px">' +
+        '<div class="pt-label">근무시간</div>' +
+        '<input type="number" class="staff-hours" placeholder="시간" inputmode="numeric" style="padding:5px 8px;font-size:13px" step="0.5" oninput="calcPTPay('+id+')">' +
+      '</div>' +
+      '<div class="pt-pay-display" id="ptPay-'+id+'">₩0</div>'
+    ) +
     '<button class="remove-btn" onclick="removeStaffRow('+id+')">✕</button>';
 
+  if (isPT) row.classList.add('pt-row');
   document.getElementById('staffList').appendChild(row);
+}
+
+function onRoleChange(selectEl, id) {
+  var row = document.getElementById('staffRow-' + id);
+  var name = row.querySelector('.staff-name').value;
+  var role = selectEl.value;
+  row.remove();
+  // 같은 위치에 재생성
+  staffRowCount--;
+  staffRowCount = id - 1;
+  addStaffRow(name, role, '1(근무)');
+}
+
+function calcPTPay(id) {
+  var row   = document.getElementById('staffRow-' + id);
+  var wage  = Number(row.querySelector('.staff-wage').value)  || 0;
+  var hours = Number(row.querySelector('.staff-hours').value) || 0;
+  var pay   = wage * hours;
+  var el    = document.getElementById('ptPay-' + id);
+  if (el) el.textContent = '₩' + pay.toLocaleString('ko-KR');
 }
 
 function removeStaffRow(id) {
@@ -581,8 +638,15 @@ function getStaffData() {
   rows.forEach(function(row) {
     var name   = row.querySelector('.staff-name').value.trim();
     var role   = row.querySelector('.staff-role').value;
-    var status = row.querySelector('.staff-status').value;
-    if (name) result.push({ name:name, role:role, status:status });
+    if (!name) return;
+    if (role === 'PT') {
+      var wage  = Number(row.querySelector('.staff-wage') ? row.querySelector('.staff-wage').value : 0) || 0;
+      var hours = Number(row.querySelector('.staff-hours') ? row.querySelector('.staff-hours').value : 0) || 0;
+      result.push({ name:name, role:'PT', status:'PT', wage:wage, hours:hours, pay:wage*hours });
+    } else {
+      var status = row.querySelector('.staff-status') ? row.querySelector('.staff-status').value : '1(근무)';
+      result.push({ name:name, role:role, status:status });
+    }
   });
   return result;
 }
@@ -615,9 +679,13 @@ function renderCapStaff(staffData, branch, entryDate) {
     }).join(', ');
   }
 
+  // PT는 이름만
+  var pt = staffData.filter(function(s){ return s.role === 'PT'; });
+
   var html = '';
   if (foh.length > 0) html += '<div><b>FOH</b> : ' + formatGroup(foh) + '</div>';
   if (boh.length > 0) html += '<div><b>BOH</b> : ' + formatGroup(boh) + '</div>';
+  if (pt.length > 0)  html += '<div><b>PT</b> : ' + pt.map(function(s){ return s.name; }).join(', ') + '</div>';
 
   document.getElementById('capStaffBody').innerHTML = html;
   document.getElementById('capStaffSection').style.display = 'block';
