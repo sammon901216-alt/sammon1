@@ -465,7 +465,15 @@ function switchMainTab(tab) {
   // 스케쥴표 섹션
   document.getElementById('scheduleSection').classList.toggle('hidden', tab !== 'schedule');
 
-  if (tab === 'schedule') loadSchedule();
+  if (tab === 'schedule') {
+    var from = document.getElementById('dateFrom').value;
+    var to   = document.getElementById('dateTo').value;
+    if (from && to) {
+      loadSchedule();
+    } else {
+      showToast('상단에서 기간을 선택하고 조회 버튼을 눌러주세요.');
+    }
+  }
 }
 
 // ── 스케쥴표 로드 ─────────────────────────────────────────
@@ -595,11 +603,11 @@ function loadData() {
       hideLoading();
       if (!res.success) { showToast('오류: '+res.error); return; }
       allRows = res.rows;
-      if (currentMainTab === 'sales') {
+      if (currentMainTab === 'schedule') {
+        loadSchedule();
+      } else {
         renderAll(res.rows, from, to);
         loadAdminYoy(from, to);
-      } else {
-        loadSchedule();
       }
     })
     .catch(function(e){ hideLoading(); showToast('서버 오류: '+e.message); });
