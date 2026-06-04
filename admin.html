@@ -376,6 +376,58 @@ tr:hover td{background:#f8fafc}
       </div>
     </div>
 
+
+    <!-- 스케쥴표 섹션 -->
+    <div id="scheduleSection" class="hidden">
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">📅 근무자 스케쥴표</div>
+          <div class="table-count" id="scheduleCount">0건</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>기입일</th>
+                <th>지점</th>
+                <th>직무</th>
+                <th>직원명</th>
+                <th>근무상태</th>
+                <th>작성자</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">👤 직원별 근무 통계</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>직원명</th>
+                <th>직무</th>
+                <th>근무(1)</th>
+                <th>반차(H)</th>
+                <th>휴무(0)</th>
+                <th>반차연차(HY)</th>
+                <th>연차(Y)</th>
+                <th>기타</th>
+                <th>총 기록일</th>
+              </tr>
+            </thead>
+            <tbody id="staffStatsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 </div>
 
