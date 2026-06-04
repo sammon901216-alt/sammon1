@@ -382,7 +382,8 @@ tr:hover td{background:#f8fafc}
 <script>
 // ══ 설정 ═══════════════════════════════════════════════════
 const API_URL = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec'; // ← Apps Script URL 입력
-const ADMIN_PW   = 'sushimago2025';        // ← 비밀번호 변경 가능
+const ADMIN_PW   = 'sushimago2025';
+const API_TOKEN  = 'ookPkyXUtOz2hRObL_PA7Pissi-a5PmCzNal7c3Iuus';        // ← 비밀번호 변경 가능
 // ═══════════════════════════════════════════════════════════
 
 const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','법인카드발주'];
@@ -423,6 +424,7 @@ function loadSchedule() {
 
   showLoading('스케쥴표 불러오는 중…');
   var url = new URL(API_URL);
+  url.searchParams.set('token', API_TOKEN);
   url.searchParams.set('action', 'getSchedule');
   url.searchParams.set('branch', JSON.stringify(currentBranch));
   url.searchParams.set('from',   JSON.stringify(from));
@@ -529,6 +531,7 @@ function loadData() {
   showLoading('데이터 불러오는 중…');
 
   var url = new URL(API_URL);
+  url.searchParams.set('token', API_TOKEN);
   url.searchParams.set('action', 'getAdminData');
   url.searchParams.set('branch', JSON.stringify(currentBranch));
   url.searchParams.set('from',   JSON.stringify(from));
@@ -577,6 +580,7 @@ function loadAdminYoy(from, to) {
   document.getElementById('yoySection').classList.add('hidden');
 
   var url = new URL(API_URL);
+  url.searchParams.set('token', API_TOKEN);
   url.searchParams.set('action', 'getAdminYoy');
   url.searchParams.set('branch', JSON.stringify(currentBranch));
   url.searchParams.set('from',   JSON.stringify(from));

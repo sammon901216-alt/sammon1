@@ -555,7 +555,8 @@ textarea{resize:vertical;min-height:80px}
 
 <script>
 // ══ 설정: Apps Script 웹앱 URL을 여기에 입력 ══════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec'; // ★ 여기에 Apps Script exec URL 입력 필수!
+const API_URL   = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec';
+const API_TOKEN = 'ookPkyXUtOz2hRObL_PA7Pissi-a5PmCzNal7c3Iuus'; // ★ 여기에 Apps Script exec URL 입력 필수!
 // ═════════════════════════════════════════════════════════
 
 const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','법인카드발주'];
@@ -758,6 +759,7 @@ function calcNetSales() {
 function callAPI(action, params) {
   var url = new URL(API_URL);
   url.searchParams.set('action', action);
+  url.searchParams.set('token', API_TOKEN);
   Object.keys(params).forEach(function(k){ url.searchParams.set(k, JSON.stringify(params[k])); });
   return fetch(url.toString()).then(function(r){ return r.json(); });
 }
@@ -817,6 +819,7 @@ function renderStep2(acc) {
 function loadYoy() {
   var url = new URL(API_URL);
   url.searchParams.set('action', 'getYoyData');
+  url.searchParams.set('token', API_TOKEN);
   url.searchParams.set('branch', JSON.stringify(state.branch));
   url.searchParams.set('entryDate', JSON.stringify(state.entryDate));
 
