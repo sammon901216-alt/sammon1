@@ -519,6 +519,7 @@ let state = {
   touchTimer:null,
 };
 var staffRowCount = 0;
+var myRecordsCache = [];
 
 // ── 서비스워커 ────────────────────────────────────────────
 if('serviceWorker' in navigator){
@@ -950,6 +951,7 @@ function renderMyRecords(rows) {
     wrap.innerHTML = '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:12px 0">당일 기록이 없습니다.</p>';
     return;
   }
+  myRecordsCache = rows;
   wrap.innerHTML = rows.map(function(r, idx) {
     return '<div class="my-record-item">'
       +'<div class="my-record-header">'
@@ -958,8 +960,8 @@ function renderMyRecords(rows) {
       +'<div class="my-record-sales">'+fmtWon(r.totalSales)+'</div>'
       +'</div>'
       +'<div class="my-record-btns">'
-      +'<button class="btn-edit-sm" onclick="startEdit('+JSON.stringify(r)+')">수정</button>'
-      +'<button class="btn-del-sm" onclick="deleteRecord(''+r.recordId+'')">삭제</button>'
+      +'<button class="btn-edit-sm" onclick="startEditIdx('+idx+')">수정</button>'
+      +'<button class="btn-del-sm" onclick="deleteRecord(\''+r.recordId+'\')">삭제</button>'
       +'</div>'
       +'</div>'
       +'<div style="font-size:.75rem;color:var(--muted)">발주합계: '+fmtWon(r.dailyOrderTotal)+'</div>'
@@ -981,6 +983,13 @@ function deleteRecord(recordId) {
       toggleMyRecords();
     })
     .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+}
+
+// ── 수정 시작 (목록에서 인덱스로 호출) ─────────────────────────
+function startEditIdx(idx) {
+  var record = myRecordsCache[idx];
+  if (!record) { showToast('기록을 찾을 수 없습니다.'); return; }
+  startEdit(record);
 }
 
 // ── 수정 시작 ────────────────────────────────────────────────
