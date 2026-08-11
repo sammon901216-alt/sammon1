@@ -488,8 +488,13 @@ textarea{resize:vertical;min-height:70px}
 
       </div><!-- /capture-card -->
 
-      <div class="mt-12">
+      <div class="mt-12" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="toggleMyRecords()">📝 오늘 내 기록 보기/수정</button>
         <button class="btn btn-secondary" onclick="toggleHistory()">📋 히스토리 보기</button>
+      </div>
+      <div id="myRecordsWrap" class="hidden mt-8 my-records-section">
+        <div class="section-title">오늘 작성한 내 기록</div>
+        <div id="myRecordsList"></div>
       </div>
       <div id="historyWrap" class="hidden mt-8">
         <div class="section-title">최근 30건 기록</div>
@@ -946,7 +951,7 @@ function toggleMyRecords() {
 }
 
 function renderMyRecords(rows) {
-  var wrap = document.getElementById('myRecordsWrap');
+  var wrap = document.getElementById('myRecordsList');
   if (!rows || rows.length === 0) {
     wrap.innerHTML = '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:12px 0">당일 기록이 없습니다.</p>';
     return;
