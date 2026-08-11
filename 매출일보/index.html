@@ -1036,12 +1036,8 @@ function cancelEdit() {
   goStep(3);
 }
 
-// ── 수정 모드 제출 오버라이드 ────────────────────────────────
-var originalSubmitStep1 = submitStep1;
-submitStep1 = function() {
-  if (!editMode) { originalSubmitStep1(); return; }
-
-  // 수정 모드
+// ── 수정 모드 제출 ───────────────────────────────────────────
+function submitEditMode() {
   var data = {
     branch:     state.branch,
     entryDate:  state.entryDate,
@@ -1074,7 +1070,7 @@ submitStep1 = function() {
       goStep(3);
     })
     .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
-};
+}
 
 // ── 스텝 전환 ─────────────────────────────────────────────
 function goStep(n){
