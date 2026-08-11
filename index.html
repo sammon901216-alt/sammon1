@@ -473,8 +473,8 @@ textarea{resize:vertical;min-height:70px}
 const API_URL   = 'https://script.google.com/macros/s/AKfycby5aPahX7cs9m9jA1-KEO4Uco49UFs6GIyJlHTa6krBwUGc_S0Opv72lD60RqJCD9zH/exec';
 const API_TOKEN = 'ookPkyXUtOz2hRObL_PA7Pissi-a5PmCzNal7c3Iuus';
 
-const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','법인카드발주'];
-const COLORS  = ['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#2c6e6b'];
+const VENDORS = ['마린푸드','스카이유통','수현물산','음료','주류','식용유','영광수산','CJ프레쉬','새롬','법인카드발주'];
+const COLORS  = ['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#2c6e6b','#c0392b','#16a085','#8e44ad'];
 
 let state = {
   recordId:null, branch:'', userName:'', entryDate:'',
@@ -891,7 +891,7 @@ function resetApp(){
   if(state.captureChartInstance){state.captureChartInstance.destroy();state.captureChartInstance=null;}
   Object.keys(Chart.instances||{}).forEach(function(k){try{Chart.instances[k].destroy();}catch(e){}});
   state={recordId:null,branch:'',userName:'',entryDate:'',accumulated:null,todayData:null,chartInstance:null,captureChartInstance:null,touchTimer:null};
-  ['totalSales','discount','marinFood','skyDist','suHyeon','beverage','liquor','cookingOil','corpCard','userName'].forEach(function(id){document.getElementById(id).value='';});
+  ['totalSales','discount','marinFood','skyDist','suHyeon','beverage','liquor','cookingOil','youngkwang','cjfresh','saerom','corpCard','userName'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('netSalesDisplay').textContent='0원';
   document.getElementById('noteInput').value='';
   document.getElementById('branchVal').value='';
