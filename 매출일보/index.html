@@ -666,7 +666,26 @@ function submitStep1(){
     staffList:getStaffData(),
   };
 
-  showLoading('누적 데이터 불러오는 중…');
+  showLoading(editMode ? '수정 중…' : '누적 데이터 불러오는 중…');
+
+  if (editMode) {
+    callAPI('updateRecord', { recordId: editRecordId, data: state.todayData })
+      .then(function(res){
+        hideLoading();
+        if(!res.success){showToast('수정 오류: '+res.error);return;}
+        state.recordId = editRecordId;
+        state.accumulated = res.accumulated;
+        editMode = false;
+        editRecordId = null;
+        document.getElementById('editModeBanner').classList.add('hidden');
+        showToast('수정됐어요! ✅');
+        renderStep3();
+        goStep(3);
+      })
+      .catch(function(e){hideLoading();showToast('서버 오류: '+e.message);});
+    return;
+  }
+
   callAPI('saveRecord',{data:state.todayData})
     .then(function(res){
       hideLoading();
@@ -1030,6 +1049,33 @@ function startEdit(record) {
 
   // 특이사항
   document.getElementById('noteInput').value  = record.note || '';
+
+  // 근무자 목록 복원
+  restoreStaffList(record.staffList);
+}
+
+// ── 근무자 목록 UI 복원 (수정 모드 진입 시) ─────────────────────
+function restoreStaffList(staffList) {
+  document.getElementById('staffList').innerHTML = '';
+  staffRowCount = 0;
+  if (!staffList || staffList.length === 0) {
+    addStaffRow();
+    return;
+  }
+  staffList.forEach(function(s) {
+    addStaffRow(s.name, s.role, s.status);
+    if (s.role === 'PT') {
+      var id = staffRowCount;
+      var row = document.getElementById('staffRow-' + id);
+      if (row) {
+        var wageEl = row.querySelector('.staff-wage');
+        var hoursEl = row.querySelector('.staff-hours');
+        if (wageEl)  wageEl.value  = s.wage  || '';
+        if (hoursEl) hoursEl.value = s.hours || '';
+        calcPTPay(id);
+      }
+    }
+  });
 }
 
 function selectBranchByName(name) {
@@ -1048,42 +1094,6 @@ function cancelEdit() {
   editRecordId = null;
   document.getElementById('editModeBanner').classList.add('hidden');
   goStep(3);
-}
-
-// ── 수정 모드 제출 ───────────────────────────────────────────
-function submitEditMode() {
-  var data = {
-    branch:     state.branch,
-    entryDate:  state.entryDate,
-    totalSales: document.getElementById('totalSales').value,
-    discount:   document.getElementById('discount').value   || 0,
-    marinFood:  document.getElementById('marinFood').value  || 0,
-    skyDist:    document.getElementById('skyDist').value    || 0,
-    suHyeon:    document.getElementById('suHyeon').value    || 0,
-    beverage:   document.getElementById('beverage').value   || 0,
-    liquor:     document.getElementById('liquor').value     || 0,
-    cookingOil: document.getElementById('cookingOil').value || 0,
-    corpCard:   document.getElementById('corpCard').value   || 0,
-    youngkwang: document.getElementById('youngkwang').value || 0,
-    cjfresh:    document.getElementById('cjfresh').value    || 0,
-    saerom:     document.getElementById('saerom').value     || 0,
-    note:       document.getElementById('noteInput').value.trim(),
-  };
-
-  showLoading('수정 중…');
-  callAPI('updateRecord', { recordId: editRecordId, data: data })
-    .then(function(res) {
-      hideLoading();
-      if (!res.success) { showToast('수정 오류: '+res.error); return; }
-      state.accumulated = res.accumulated;
-      editMode = false;
-      editRecordId = null;
-      document.getElementById('editModeBanner').classList.add('hidden');
-      showToast('수정됐어요! ✅');
-      renderStep3();
-      goStep(3);
-    })
-    .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
 }
 
 // ── 스텝 전환 ─────────────────────────────────────────────
