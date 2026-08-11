@@ -679,6 +679,7 @@ function submitStep1(){
         editRecordId = null;
         document.getElementById('editModeBanner').classList.add('hidden');
         showToast('수정됐어요! ✅');
+        refreshMyRecords();
         renderStep3();
         goStep(3);
       })
@@ -967,6 +968,26 @@ function toggleMyRecords() {
     wrap.classList.add('hidden');
     myRecordsVisible = false;
   }
+}
+
+// ── 수정/삭제 후 "내 기록보기" 최신화 ───────────────────────────
+// 패널이 열려있었으면 최신 데이터로 다시 그리고, 닫혀있었으면
+// 다음에 열 때 새로 불러오도록 상태만 초기화합니다.
+function refreshMyRecords() {
+  var wrap = document.getElementById('myRecordsWrap');
+  var wasOpen = myRecordsVisible;
+  myRecordsVisible = false;
+  if (!wasOpen) return;
+  callAPI('getMyRecords', {
+    branch:    state.branch,
+    userName:  state.userName,
+    entryDate: state.entryDate,
+  }).then(function(res) {
+    if (!res.success) return;
+    renderMyRecords(res.rows);
+    wrap.classList.remove('hidden');
+    myRecordsVisible = true;
+  }).catch(function(){});
 }
 
 function renderMyRecords(rows) {
