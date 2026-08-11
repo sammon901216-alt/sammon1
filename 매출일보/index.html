@@ -319,7 +319,10 @@ textarea{resize:vertical;min-height:70px}
         <div class="form-group"><label>음료</label><div class="unit-wrap"><input type="number" id="beverage" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
         <div class="form-group"><label>주류</label><div class="unit-wrap"><input type="number" id="liquor" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
         <div class="form-group"><label>식용유</label><div class="unit-wrap"><input type="number" id="cookingOil" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
-        <div class="form-group" style="grid-column:span 2"><label>법인카드발주</label><div class="unit-wrap"><input type="number" id="corpCard" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+        <div class="form-group"><label>영광수산</label><div class="unit-wrap"><input type="number" id="youngkwang" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>CJ프레쉬</label><div class="unit-wrap"><input type="number" id="cjfresh" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group" style="grid-column:span 2"><label>새롬</label><div class="unit-wrap"><input type="number" id="saerom" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group" style="grid-column:span 2"><label>법인카드발주</label><div class="unit-wrap"><input type="number" id="corpCard" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
       </div>
     </div>
   </div>
@@ -616,7 +619,10 @@ function submitStep1(){
     beverage:Number(document.getElementById('beverage').value)||0,
     liquor:Number(document.getElementById('liquor').value)||0,
     cookingOil:Number(document.getElementById('cookingOil').value)||0,
-    corpCard:Number(document.getElementById('corpCard').value)||0,
+    youngkwang:Number(document.getElementById('youngkwang').value)||0,
+    cjfresh:   Number(document.getElementById('cjfresh').value)||0,
+    saerom:    Number(document.getElementById('saerom').value)||0,
+    corpCard:  Number(document.getElementById('corpCard').value)||0,
     note:document.getElementById('noteInput').value.trim(),
     staffList:getStaffData(),
   };
@@ -660,7 +666,7 @@ function renderStep2(){
 
   // 당일 업체별 발주
   var vEl=document.getElementById('chk-vendors');
-  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',법인카드발주:'corpCard'};
+  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',영광수산:'youngkwang','CJ프레쉬':'cjfresh',새롬:'saerom',법인카드발주:'corpCard'};
   vEl.innerHTML=VENDORS.map(function(v){
     return '<div class="check-row"><span class="check-label">'+v+'</span><span class="check-value">'+fmtWon(d[vendorKeys[v]])+'</span></div>';
   }).join('');
@@ -705,7 +711,7 @@ function submitStep2(){
 function renderStep3(){
   var d=state.todayData;
   var acc=state.accumulated;
-  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',법인카드발주:'corpCard'};
+  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',영광수산:'youngkwang','CJ프레쉬':'cjfresh',새롬:'saerom',법인카드발주:'corpCard'};
 
   document.getElementById('capBranch').textContent=state.branch+' 매출일보';
   document.getElementById('capDate').textContent=state.entryDate;
