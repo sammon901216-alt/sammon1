@@ -195,6 +195,35 @@ textarea{resize:vertical;min-height:70px}
 .offline-bar{display:none;background:#b85c00;color:#fff;text-align:center;font-size:.78rem;padding:6px;letter-spacing:.05em}
 .offline-bar.show{display:block}
 
+
+/* ── 수정/삭제 기능 ── */
+.my-records-section{margin-bottom:14px}
+.my-record-item{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 14px;margin-bottom:8px;background:#fff;
+}
+.my-record-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.my-record-date{font-size:.78rem;color:var(--muted)}
+.my-record-sales{font-family:var(--font-serif);font-size:.95rem;color:var(--accent2);font-weight:700}
+.my-record-btns{display:flex;gap:6px}
+.btn-edit-sm{
+  padding:5px 12px;background:var(--accent2);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
+.btn-del-sm{
+  padding:5px 12px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
+.edit-mode-banner{
+  background:#fff8e1;border:1px solid #ffe082;border-radius:var(--radius);
+  padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#b85c00;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.btn-cancel-edit{
+  padding:5px 12px;background:var(--muted);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
+
 .hidden{display:none !important}
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}
 </style>
@@ -254,6 +283,10 @@ textarea{resize:vertical;min-height:70px}
 <!-- ══════════ STEP 1 ══════════ -->
 <div id="step1">
 
+  <div class="edit-mode-banner hidden" id="editModeBanner">
+    ✏️ 수정 모드 — 내용을 변경 후 작성완료를 눌러주세요
+    <button class="btn-cancel-edit" onclick="cancelEdit()">취소</button>
+  </div>
   <div class="card mt-12">
     <div class="card-header">📋 기본 정보</div>
     <div class="card-body">
@@ -882,6 +915,166 @@ function renderHistory(rows){
     return '<div class="history-item"><div class="hi-date">'+r.entryDate+' · '+r.userName+'</div><div class="hi-sales">'+fmtWon(r.totalSales)+'</div><div class="hi-cost">당일 원가율 '+rate+' | 발주합계 '+fmtWon(r.dailyOrderTotal)+'</div>'+(r.note?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">📌 '+r.note+'</div>':'')+'</div>';
   }).join('');
 }
+
+
+// ── 수정 모드 상태 ──────────────────────────────────────────
+var editMode = false;
+var editRecordId = null;
+
+// ── 당일 기록 조회/토글 ───────────────────────────────────────
+var myRecordsVisible = false;
+function toggleMyRecords() {
+  var wrap = document.getElementById('myRecordsWrap');
+  if (!myRecordsVisible) {
+    showLoading('당일 기록 불러오는 중…');
+    callAPI('getMyRecords', {
+      branch:    state.branch,
+      userName:  state.userName,
+      entryDate: state.entryDate,
+    }).then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('오류: '+res.error); return; }
+      renderMyRecords(res.rows);
+      wrap.classList.remove('hidden');
+      myRecordsVisible = true;
+    }).catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+  } else {
+    wrap.classList.add('hidden');
+    myRecordsVisible = false;
+  }
+}
+
+function renderMyRecords(rows) {
+  var wrap = document.getElementById('myRecordsWrap');
+  if (!rows || rows.length === 0) {
+    wrap.innerHTML = '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:12px 0">당일 기록이 없습니다.</p>';
+    return;
+  }
+  wrap.innerHTML = rows.map(function(r, idx) {
+    return '<div class="my-record-item">'
+      +'<div class="my-record-header">'
+      +'<div>'
+      +'<div class="my-record-date">'+r.entryDate+' · 기록 '+(idx+1)+'</div>'
+      +'<div class="my-record-sales">'+fmtWon(r.totalSales)+'</div>'
+      +'</div>'
+      +'<div class="my-record-btns">'
+      +'<button class="btn-edit-sm" onclick="startEdit('+JSON.stringify(r)+')">수정</button>'
+      +'<button class="btn-del-sm" onclick="deleteRecord(''+r.recordId+'')">삭제</button>'
+      +'</div>'
+      +'</div>'
+      +'<div style="font-size:.75rem;color:var(--muted)">발주합계: '+fmtWon(r.dailyOrderTotal)+'</div>'
+      +(r.note?'<div style="font-size:.72rem;color:var(--muted);margin-top:3px">📌 '+r.note+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ── 삭제 ────────────────────────────────────────────────────
+function deleteRecord(recordId) {
+  if (!confirm('이 기록을 삭제하시겠어요?')) return;
+  showLoading('삭제 중…');
+  callAPI('deleteByRecordId', { recordId: recordId })
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('삭제 오류: '+res.error); return; }
+      showToast('삭제됐어요!');
+      myRecordsVisible = false;
+      toggleMyRecords();
+    })
+    .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+}
+
+// ── 수정 시작 ────────────────────────────────────────────────
+function startEdit(record) {
+  editMode = true;
+  editRecordId = record.recordId;
+
+  // STEP1으로 이동해서 기존 데이터 채우기
+  goStep(1);
+  document.getElementById('editModeBanner').classList.remove('hidden');
+
+  // 기본정보
+  selectBranchByName(state.branch);
+  document.getElementById('userName').value   = state.userName;
+  document.getElementById('entryDate').value  = state.entryDate;
+
+  // 매출
+  document.getElementById('totalSales').value = record.totalSales || 0;
+  document.getElementById('discount').value   = record.discount   || 0;
+  calcNetSales();
+
+  // 발주
+  document.getElementById('marinFood').value  = record.marinFood  || 0;
+  document.getElementById('skyDist').value    = record.skyDist    || 0;
+  document.getElementById('suHyeon').value    = record.suHyeon    || 0;
+  document.getElementById('beverage').value   = record.beverage   || 0;
+  document.getElementById('liquor').value     = record.liquor     || 0;
+  document.getElementById('cookingOil').value = record.cookingOil || 0;
+  document.getElementById('corpCard').value   = record.corpCard   || 0;
+  document.getElementById('youngkwang').value = record.youngkwang || 0;
+  document.getElementById('cjfresh').value    = record.cjfresh    || 0;
+  document.getElementById('saerom').value     = record.saerom     || 0;
+
+  // 특이사항
+  document.getElementById('noteInput').value  = record.note || '';
+}
+
+function selectBranchByName(name) {
+  document.querySelectorAll('.branch-btn').forEach(function(b) {
+    if (b.textContent.trim() === name) {
+      b.classList.add('selected');
+    } else {
+      b.classList.remove('selected');
+    }
+  });
+  document.getElementById('branchVal').value = name;
+}
+
+function cancelEdit() {
+  editMode = false;
+  editRecordId = null;
+  document.getElementById('editModeBanner').classList.add('hidden');
+  goStep(3);
+}
+
+// ── 수정 모드 제출 오버라이드 ────────────────────────────────
+var originalSubmitStep1 = submitStep1;
+submitStep1 = function() {
+  if (!editMode) { originalSubmitStep1(); return; }
+
+  // 수정 모드
+  var data = {
+    branch:     state.branch,
+    entryDate:  state.entryDate,
+    totalSales: document.getElementById('totalSales').value,
+    discount:   document.getElementById('discount').value   || 0,
+    marinFood:  document.getElementById('marinFood').value  || 0,
+    skyDist:    document.getElementById('skyDist').value    || 0,
+    suHyeon:    document.getElementById('suHyeon').value    || 0,
+    beverage:   document.getElementById('beverage').value   || 0,
+    liquor:     document.getElementById('liquor').value     || 0,
+    cookingOil: document.getElementById('cookingOil').value || 0,
+    corpCard:   document.getElementById('corpCard').value   || 0,
+    youngkwang: document.getElementById('youngkwang').value || 0,
+    cjfresh:    document.getElementById('cjfresh').value    || 0,
+    saerom:     document.getElementById('saerom').value     || 0,
+    note:       document.getElementById('noteInput').value.trim(),
+  };
+
+  showLoading('수정 중…');
+  callAPI('updateRecord', { recordId: editRecordId, data: data })
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('수정 오류: '+res.error); return; }
+      state.accumulated = res.accumulated;
+      editMode = false;
+      editRecordId = null;
+      document.getElementById('editModeBanner').classList.add('hidden');
+      showToast('수정됐어요! ✅');
+      renderStep3();
+      goStep(3);
+    })
+    .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+};
 
 // ── 스텝 전환 ─────────────────────────────────────────────
 function goStep(n){
