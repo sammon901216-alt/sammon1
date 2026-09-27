@@ -176,6 +176,15 @@ textarea{resize:vertical;min-height:70px}
 .install-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-end;justify-content:center}
 .install-modal.show{display:flex}
 .install-modal-card{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 20px calc(20px + var(--sab));width:100%;max-width:520px}
+
+/* 이미지 저장 모달 (iOS 등 다운로드 속성 미지원 브라우저용) */
+.img-save-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:16px 16px calc(16px + var(--sab))}
+.img-save-modal.show{display:flex}
+.img-save-hint{color:#fff;font-size:.9rem;text-align:center;margin-bottom:14px;line-height:1.5}
+.img-save-hint b{color:var(--gold)}
+.img-save-img-wrap{max-width:100%;max-height:65vh;overflow:auto;border-radius:8px}
+.img-save-img-wrap img{width:100%;height:auto;display:block;border-radius:8px}
+.img-save-close{margin-top:18px;background:var(--surface);color:var(--text);border:none;border-radius:20px;padding:10px 28px;font-size:.85rem;font-weight:700}
 .im-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .im-title{font-family:var(--font-serif);font-size:1rem;color:var(--accent);font-weight:700}
 .im-close{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px}
@@ -260,6 +269,13 @@ textarea{resize:vertical;min-height:70px}
     </div>
     <button class="im-confirm" onclick="closeInstallModal()">확인</button>
   </div>
+</div>
+
+<!-- 이미지 저장 모달 (아이폰 등 다운로드 속성 미지원 브라우저용) -->
+<div class="img-save-modal" id="imgSaveModal">
+  <div class="img-save-hint">이미지를 <b>길게 눌러</b> "사진에 저장"을 선택해 주세요 📥</div>
+  <div class="img-save-img-wrap"><img id="imgSaveTarget" src="" alt="매출일보 이미지"></div>
+  <button class="img-save-close" onclick="closeImgSaveModal()">닫기</button>
 </div>
 
 <!-- 헤더 -->
@@ -536,7 +552,11 @@ window.addEventListener('online',function(){document.getElementById('offlineBar'
 window.addEventListener('offline',function(){document.getElementById('offlineBar').classList.add('show')});
 
 // ── PWA 설치 ──────────────────────────────────────────────
-function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent);}
+function isIOS(){
+  // iPadOS 13+는 데스크탑 사파리처럼 UA가 "Macintosh"로 찍히므로 터치 지원 여부로 함께 판별
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
 window.addEventListener('load',function(){if(isStandalone())document.getElementById('installBtn').style.display='none';});
 function showInstallGuide(){switchGuide(isIOS()?'ios':'android');document.getElementById('installModal').classList.add('show');}
@@ -897,7 +917,7 @@ function touchEnd(e){
   if(state.touchTimer){clearTimeout(state.touchTimer);state.touchTimer=null;}
 }
 function doDownload(){
-  showLoading('이미지 저장 중…');
+  showLoading('이미지 생성 중…');
   html2canvas(document.getElementById('capture-card'),{
     backgroundColor:'#fdfaf4',
     scale:2,
@@ -905,8 +925,18 @@ function doDownload(){
     logging:false,
   }).then(function(canvas){
     hideLoading();
+    var fileName=state.branch+'_'+state.entryDate+'_매출일보.png';
+
+    // 아이폰(iOS) Safari는 <a download> 속성을 무시해서 "저장됨" 토스트만 뜨고
+    // 실제로는 사진 앱에 아무것도 저장되지 않는 문제가 있었음.
+    // → iOS에서는 이미지를 화면에 직접 띄워 길게 눌러 저장하게 안내한다.
+    if (isIOS()) {
+      openImgSaveModal(canvas.toDataURL('image/png'));
+      return;
+    }
+
     var link=document.createElement('a');
-    link.download=state.branch+'_'+state.entryDate+'_매출일보.png';
+    link.download=fileName;
     link.href=canvas.toDataURL('image/png');
     link.click();
     showToast('이미지가 저장됐어요! 📥');
@@ -914,6 +944,14 @@ function doDownload(){
     hideLoading();
     showToast('저장 실패. 스크린샷을 이용해 주세요.');
   });
+}
+function openImgSaveModal(dataUrl){
+  document.getElementById('imgSaveTarget').src=dataUrl;
+  document.getElementById('imgSaveModal').classList.add('show');
+}
+function closeImgSaveModal(){
+  document.getElementById('imgSaveModal').classList.remove('show');
+  document.getElementById('imgSaveTarget').src='';
 }
 
 // ── 히스토리 ──────────────────────────────────────────────
