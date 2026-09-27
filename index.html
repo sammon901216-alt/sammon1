@@ -176,6 +176,15 @@ textarea{resize:vertical;min-height:70px}
 .install-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-end;justify-content:center}
 .install-modal.show{display:flex}
 .install-modal-card{background:var(--surface);border-radius:16px 16px 0 0;padding:20px 20px calc(20px + var(--sab));width:100%;max-width:520px}
+
+/* 이미지 저장 모달 (iOS 등 다운로드 속성 미지원 브라우저용) */
+.img-save-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:16px 16px calc(16px + var(--sab))}
+.img-save-modal.show{display:flex}
+.img-save-hint{color:#fff;font-size:.9rem;text-align:center;margin-bottom:14px;line-height:1.5}
+.img-save-hint b{color:var(--gold)}
+.img-save-img-wrap{max-width:100%;max-height:65vh;overflow:auto;border-radius:8px}
+.img-save-img-wrap img{width:100%;height:auto;display:block;border-radius:8px}
+.img-save-close{margin-top:18px;background:var(--surface);color:var(--text);border:none;border-radius:20px;padding:10px 28px;font-size:.85rem;font-weight:700}
 .im-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .im-title{font-family:var(--font-serif);font-size:1rem;color:var(--accent);font-weight:700}
 .im-close{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px}
@@ -194,6 +203,35 @@ textarea{resize:vertical;min-height:70px}
 /* 오프라인 */
 .offline-bar{display:none;background:#b85c00;color:#fff;text-align:center;font-size:.78rem;padding:6px;letter-spacing:.05em}
 .offline-bar.show{display:block}
+
+
+/* ── 수정/삭제 기능 ── */
+.my-records-section{margin-bottom:14px}
+.my-record-item{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:11px 14px;margin-bottom:8px;background:#fff;
+}
+.my-record-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.my-record-date{font-size:.78rem;color:var(--muted)}
+.my-record-sales{font-family:var(--font-serif);font-size:.95rem;color:var(--accent2);font-weight:700}
+.my-record-btns{display:flex;gap:6px}
+.btn-edit-sm{
+  padding:5px 12px;background:var(--accent2);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
+.btn-del-sm{
+  padding:5px 12px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
+.edit-mode-banner{
+  background:#fff8e1;border:1px solid #ffe082;border-radius:var(--radius);
+  padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#b85c00;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.btn-cancel-edit{
+  padding:5px 12px;background:var(--muted);color:#fff;
+  border:none;border-radius:var(--radius);font-size:.75rem;cursor:pointer;
+}
 
 .hidden{display:none !important}
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}
@@ -233,6 +271,13 @@ textarea{resize:vertical;min-height:70px}
   </div>
 </div>
 
+<!-- 이미지 저장 모달 (아이폰 등 다운로드 속성 미지원 브라우저용) -->
+<div class="img-save-modal" id="imgSaveModal">
+  <div class="img-save-hint">이미지를 <b>길게 눌러</b> "사진에 저장"을 선택해 주세요 📥</div>
+  <div class="img-save-img-wrap"><img id="imgSaveTarget" src="" alt="매출일보 이미지"></div>
+  <button class="img-save-close" onclick="closeImgSaveModal()">닫기</button>
+</div>
+
 <!-- 헤더 -->
 <header class="app-header">
   <h1>🍽 매출일보</h1>
@@ -254,6 +299,10 @@ textarea{resize:vertical;min-height:70px}
 <!-- ══════════ STEP 1 ══════════ -->
 <div id="step1">
 
+  <div class="edit-mode-banner hidden" id="editModeBanner">
+    ✏️ 수정 모드 — 내용을 변경 후 작성완료를 눌러주세요
+    <button class="btn-cancel-edit" onclick="cancelEdit()">취소</button>
+  </div>
   <div class="card mt-12">
     <div class="card-header">📋 기본 정보</div>
     <div class="card-body">
@@ -319,7 +368,10 @@ textarea{resize:vertical;min-height:70px}
         <div class="form-group"><label>음료</label><div class="unit-wrap"><input type="number" id="beverage" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
         <div class="form-group"><label>주류</label><div class="unit-wrap"><input type="number" id="liquor" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
         <div class="form-group"><label>식용유</label><div class="unit-wrap"><input type="number" id="cookingOil" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
-        <div class="form-group" style="grid-column:span 2"><label>법인카드발주</label><div class="unit-wrap"><input type="number" id="corpCard" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+        <div class="form-group"><label>영광수산</label><div class="unit-wrap"><input type="number" id="youngkwang" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group"><label>CJ프레쉬</label><div class="unit-wrap"><input type="number" id="cjfresh" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group" style="grid-column:span 2"><label>새롬</label><div class="unit-wrap"><input type="number" id="saerom" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
+          <div class="form-group" style="grid-column:span 2"><label>법인카드발주</label><div class="unit-wrap"><input type="number" id="corpCard" placeholder="0" inputmode="numeric"><span class="unit">원</span></div></div>
       </div>
     </div>
   </div>
@@ -452,8 +504,13 @@ textarea{resize:vertical;min-height:70px}
 
       </div><!-- /capture-card -->
 
-      <div class="mt-12">
+      <div class="mt-12" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="toggleMyRecords()">📝 오늘 내 기록 보기/수정</button>
         <button class="btn btn-secondary" onclick="toggleHistory()">📋 히스토리 보기</button>
+      </div>
+      <div id="myRecordsWrap" class="hidden mt-8 my-records-section">
+        <div class="section-title">오늘 작성한 내 기록</div>
+        <div id="myRecordsList"></div>
       </div>
       <div id="historyWrap" class="hidden mt-8">
         <div class="section-title">최근 30건 기록</div>
@@ -483,6 +540,7 @@ let state = {
   touchTimer:null,
 };
 var staffRowCount = 0;
+var myRecordsCache = [];
 
 // ── 서비스워커 ────────────────────────────────────────────
 if('serviceWorker' in navigator){
@@ -494,7 +552,11 @@ window.addEventListener('online',function(){document.getElementById('offlineBar'
 window.addEventListener('offline',function(){document.getElementById('offlineBar').classList.add('show')});
 
 // ── PWA 설치 ──────────────────────────────────────────────
-function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent);}
+function isIOS(){
+  // iPadOS 13+는 데스크탑 사파리처럼 UA가 "Macintosh"로 찍히므로 터치 지원 여부로 함께 판별
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
 window.addEventListener('load',function(){if(isStandalone())document.getElementById('installBtn').style.display='none';});
 function showInstallGuide(){switchGuide(isIOS()?'ios':'android');document.getElementById('installModal').classList.add('show');}
@@ -616,12 +678,35 @@ function submitStep1(){
     beverage:Number(document.getElementById('beverage').value)||0,
     liquor:Number(document.getElementById('liquor').value)||0,
     cookingOil:Number(document.getElementById('cookingOil').value)||0,
-    corpCard:Number(document.getElementById('corpCard').value)||0,
+    youngkwang:Number(document.getElementById('youngkwang').value)||0,
+    cjfresh:   Number(document.getElementById('cjfresh').value)||0,
+    saerom:    Number(document.getElementById('saerom').value)||0,
+    corpCard:  Number(document.getElementById('corpCard').value)||0,
     note:document.getElementById('noteInput').value.trim(),
     staffList:getStaffData(),
   };
 
-  showLoading('누적 데이터 불러오는 중…');
+  showLoading(editMode ? '수정 중…' : '누적 데이터 불러오는 중…');
+
+  if (editMode) {
+    callAPI('updateRecord', { recordId: editRecordId, data: state.todayData })
+      .then(function(res){
+        hideLoading();
+        if(!res.success){showToast('수정 오류: '+res.error);return;}
+        state.recordId = editRecordId;
+        state.accumulated = res.accumulated;
+        editMode = false;
+        editRecordId = null;
+        document.getElementById('editModeBanner').classList.add('hidden');
+        showToast('수정됐어요! ✅');
+        refreshMyRecords();
+        renderStep3();
+        goStep(3);
+      })
+      .catch(function(e){hideLoading();showToast('서버 오류: '+e.message);});
+    return;
+  }
+
   callAPI('saveRecord',{data:state.todayData})
     .then(function(res){
       hideLoading();
@@ -660,7 +745,7 @@ function renderStep2(){
 
   // 당일 업체별 발주
   var vEl=document.getElementById('chk-vendors');
-  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',법인카드발주:'corpCard'};
+  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',영광수산:'youngkwang','CJ프레쉬':'cjfresh',새롬:'saerom',법인카드발주:'corpCard'};
   vEl.innerHTML=VENDORS.map(function(v){
     return '<div class="check-row"><span class="check-label">'+v+'</span><span class="check-value">'+fmtWon(d[vendorKeys[v]])+'</span></div>';
   }).join('');
@@ -705,7 +790,7 @@ function submitStep2(){
 function renderStep3(){
   var d=state.todayData;
   var acc=state.accumulated;
-  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',법인카드발주:'corpCard'};
+  var vendorKeys={마린푸드:'marinFood',스카이유통:'skyDist',수현물산:'suHyeon',음료:'beverage',주류:'liquor',식용유:'cookingOil',영광수산:'youngkwang','CJ프레쉬':'cjfresh',새롬:'saerom',법인카드발주:'corpCard'};
 
   document.getElementById('capBranch').textContent=state.branch+' 매출일보';
   document.getElementById('capDate').textContent=state.entryDate;
@@ -832,7 +917,7 @@ function touchEnd(e){
   if(state.touchTimer){clearTimeout(state.touchTimer);state.touchTimer=null;}
 }
 function doDownload(){
-  showLoading('이미지 저장 중…');
+  showLoading('이미지 생성 중…');
   html2canvas(document.getElementById('capture-card'),{
     backgroundColor:'#fdfaf4',
     scale:2,
@@ -840,8 +925,18 @@ function doDownload(){
     logging:false,
   }).then(function(canvas){
     hideLoading();
+    var fileName=state.branch+'_'+state.entryDate+'_매출일보.png';
+
+    // 아이폰(iOS) Safari는 <a download> 속성을 무시해서 "저장됨" 토스트만 뜨고
+    // 실제로는 사진 앱에 아무것도 저장되지 않는 문제가 있었음.
+    // → iOS에서는 이미지를 화면에 직접 띄워 길게 눌러 저장하게 안내한다.
+    if (isIOS()) {
+      openImgSaveModal(canvas.toDataURL('image/png'));
+      return;
+    }
+
     var link=document.createElement('a');
-    link.download=state.branch+'_'+state.entryDate+'_매출일보.png';
+    link.download=fileName;
     link.href=canvas.toDataURL('image/png');
     link.click();
     showToast('이미지가 저장됐어요! 📥');
@@ -849,6 +944,14 @@ function doDownload(){
     hideLoading();
     showToast('저장 실패. 스크린샷을 이용해 주세요.');
   });
+}
+function openImgSaveModal(dataUrl){
+  document.getElementById('imgSaveTarget').src=dataUrl;
+  document.getElementById('imgSaveModal').classList.add('show');
+}
+function closeImgSaveModal(){
+  document.getElementById('imgSaveModal').classList.remove('show');
+  document.getElementById('imgSaveTarget').src='';
 }
 
 // ── 히스토리 ──────────────────────────────────────────────
@@ -875,6 +978,181 @@ function renderHistory(rows){
     var rate=r.totalSales>0?((r.dailyOrderTotal/r.totalSales)*100).toFixed(1)+'%':'—';
     return '<div class="history-item"><div class="hi-date">'+r.entryDate+' · '+r.userName+'</div><div class="hi-sales">'+fmtWon(r.totalSales)+'</div><div class="hi-cost">당일 원가율 '+rate+' | 발주합계 '+fmtWon(r.dailyOrderTotal)+'</div>'+(r.note?'<div style="font-size:.72rem;color:var(--muted);margin-top:4px">📌 '+r.note+'</div>':'')+'</div>';
   }).join('');
+}
+
+
+// ── 수정 모드 상태 ──────────────────────────────────────────
+var editMode = false;
+var editRecordId = null;
+
+// ── 당일 기록 조회/토글 ───────────────────────────────────────
+var myRecordsVisible = false;
+function toggleMyRecords() {
+  var wrap = document.getElementById('myRecordsWrap');
+  if (!myRecordsVisible) {
+    showLoading('당일 기록 불러오는 중…');
+    callAPI('getMyRecords', {
+      branch:    state.branch,
+      userName:  state.userName,
+      entryDate: state.entryDate,
+    }).then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('오류: '+res.error); return; }
+      renderMyRecords(res.rows);
+      wrap.classList.remove('hidden');
+      myRecordsVisible = true;
+    }).catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+  } else {
+    wrap.classList.add('hidden');
+    myRecordsVisible = false;
+  }
+}
+
+// ── 수정/삭제 후 "내 기록보기" 최신화 ───────────────────────────
+// 패널이 열려있었으면 최신 데이터로 다시 그리고, 닫혀있었으면
+// 다음에 열 때 새로 불러오도록 상태만 초기화합니다.
+function refreshMyRecords() {
+  var wrap = document.getElementById('myRecordsWrap');
+  var wasOpen = myRecordsVisible;
+  myRecordsVisible = false;
+  if (!wasOpen) return;
+  callAPI('getMyRecords', {
+    branch:    state.branch,
+    userName:  state.userName,
+    entryDate: state.entryDate,
+  }).then(function(res) {
+    if (!res.success) return;
+    renderMyRecords(res.rows);
+    wrap.classList.remove('hidden');
+    myRecordsVisible = true;
+  }).catch(function(){});
+}
+
+function renderMyRecords(rows) {
+  var wrap = document.getElementById('myRecordsList');
+  if (!rows || rows.length === 0) {
+    wrap.innerHTML = '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:12px 0">당일 기록이 없습니다.</p>';
+    return;
+  }
+  myRecordsCache = rows;
+  wrap.innerHTML = rows.map(function(r, idx) {
+    return '<div class="my-record-item">'
+      +'<div class="my-record-header">'
+      +'<div>'
+      +'<div class="my-record-date">'+r.entryDate+' · 기록 '+(idx+1)+'</div>'
+      +'<div class="my-record-sales">'+fmtWon(r.totalSales)+'</div>'
+      +'</div>'
+      +'<div class="my-record-btns">'
+      +'<button class="btn-edit-sm" onclick="startEditIdx('+idx+')">수정</button>'
+      +'<button class="btn-del-sm" onclick="deleteRecord(\''+r.recordId+'\')">삭제</button>'
+      +'</div>'
+      +'</div>'
+      +'<div style="font-size:.75rem;color:var(--muted)">발주합계: '+fmtWon(r.dailyOrderTotal)+'</div>'
+      +(r.note?'<div style="font-size:.72rem;color:var(--muted);margin-top:3px">📌 '+r.note+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ── 삭제 ────────────────────────────────────────────────────
+function deleteRecord(recordId) {
+  if (!confirm('이 기록을 삭제하시겠어요?')) return;
+  showLoading('삭제 중…');
+  callAPI('deleteByRecordId', { recordId: recordId })
+    .then(function(res) {
+      hideLoading();
+      if (!res.success) { showToast('삭제 오류: '+res.error); return; }
+      showToast('삭제됐어요!');
+      myRecordsVisible = false;
+      toggleMyRecords();
+    })
+    .catch(function(e){ hideLoading(); showToast('오류: '+e.message); });
+}
+
+// ── 수정 시작 (목록에서 인덱스로 호출) ─────────────────────────
+function startEditIdx(idx) {
+  var record = myRecordsCache[idx];
+  if (!record) { showToast('기록을 찾을 수 없습니다.'); return; }
+  startEdit(record);
+}
+
+// ── 수정 시작 ────────────────────────────────────────────────
+function startEdit(record) {
+  editMode = true;
+  editRecordId = record.recordId;
+
+  // STEP1으로 이동해서 기존 데이터 채우기
+  goStep(1);
+  document.getElementById('editModeBanner').classList.remove('hidden');
+
+  // 기본정보
+  selectBranchByName(state.branch);
+  document.getElementById('userName').value   = state.userName;
+  document.getElementById('entryDate').value  = state.entryDate;
+
+  // 매출
+  document.getElementById('totalSales').value = record.totalSales || 0;
+  document.getElementById('discount').value   = record.discount   || 0;
+  calcNetSales();
+
+  // 발주
+  document.getElementById('marinFood').value  = record.marinFood  || 0;
+  document.getElementById('skyDist').value    = record.skyDist    || 0;
+  document.getElementById('suHyeon').value    = record.suHyeon    || 0;
+  document.getElementById('beverage').value   = record.beverage   || 0;
+  document.getElementById('liquor').value     = record.liquor     || 0;
+  document.getElementById('cookingOil').value = record.cookingOil || 0;
+  document.getElementById('corpCard').value   = record.corpCard   || 0;
+  document.getElementById('youngkwang').value = record.youngkwang || 0;
+  document.getElementById('cjfresh').value    = record.cjfresh    || 0;
+  document.getElementById('saerom').value     = record.saerom     || 0;
+
+  // 특이사항
+  document.getElementById('noteInput').value  = record.note || '';
+
+  // 근무자 목록 복원
+  restoreStaffList(record.staffList);
+}
+
+// ── 근무자 목록 UI 복원 (수정 모드 진입 시) ─────────────────────
+function restoreStaffList(staffList) {
+  document.getElementById('staffList').innerHTML = '';
+  staffRowCount = 0;
+  if (!staffList || staffList.length === 0) {
+    addStaffRow();
+    return;
+  }
+  staffList.forEach(function(s) {
+    addStaffRow(s.name, s.role, s.status);
+    if (s.role === 'PT') {
+      var id = staffRowCount;
+      var row = document.getElementById('staffRow-' + id);
+      if (row) {
+        var wageEl = row.querySelector('.staff-wage');
+        var hoursEl = row.querySelector('.staff-hours');
+        if (wageEl)  wageEl.value  = s.wage  || '';
+        if (hoursEl) hoursEl.value = s.hours || '';
+        calcPTPay(id);
+      }
+    }
+  });
+}
+
+function selectBranchByName(name) {
+  document.querySelectorAll('.branch-btn').forEach(function(b) {
+    if (b.textContent.trim() === name) {
+      b.classList.add('selected');
+    } else {
+      b.classList.remove('selected');
+    }
+  });
+  document.getElementById('branchVal').value = name;
+}
+
+function cancelEdit() {
+  editMode = false;
+  editRecordId = null;
+  document.getElementById('editModeBanner').classList.add('hidden');
+  goStep(3);
 }
 
 // ── 스텝 전환 ─────────────────────────────────────────────
