@@ -596,11 +596,12 @@ const GROUPS = [
   {name:'주류',     items:[['일오주류','ilo'],['대성주류','daesung']]},
   {name:'기타 식재료', items:[['법인카드발주','corpCard']]}
 ];
+const FIXED_BRANCH = '';   // 지점 고정 앱(예: 경기점)에서만 값을 넣는다
 const SALES = [['카드매출','card'],['현금매출','cash'],['상품권매출','gift']];
 const SALES_IDS = [].concat.apply([],SALES.map(function(x){return [x[1]+'Amt',x[1]+'Cnt'];}));
 const DISCOUNTS = [['입주사할인','discIpju'],['고객서비스제공','discService'],['블로거서비스','discBlogger'],['기타할인','discEtc']];
 const VENDOR_KEYS = GROUPS.reduce(function(a,g){return a.concat(g.items.map(function(x){return x[1];}));},[]);
-var DONUT_COLORS=['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#8a8a8a'];
+var DONUT_COLORS=['#8b2c2c','#2c4a6e','#c49a3c','#3a6b3a','#7a4a1e','#5a2c6e','#2c7a7a'];
 function groupDaily(g,d){return g.items.reduce(function(a,x){return a+(Number(d[x[1]])||0);},0);}
 function groupAcc(g,acc){var vt=(acc&&acc.vendorTotals)||{};return g.items.reduce(function(a,x){return a+(Number(vt[x[0]])||0);},0);}
 function itemsText(g,d){return g.items.filter(function(x){return Number(d[x[1]])>0;}).map(function(x){return x[0]+' '+Number(d[x[1]]).toLocaleString();}).join(' · ');}
@@ -644,10 +645,16 @@ function switchGuide(os){
 window.onload=function(){
   var t=new Date();
   document.getElementById('entryDate').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  applyFixedBranch();
   addStaffRow();
 };
 
 // ── 지점 선택 ─────────────────────────────────────────────
+function applyFixedBranch(){
+  if(!FIXED_BRANCH)return;
+  var b=document.querySelector('.branch-btn');
+  if(b)selectBranch(b,FIXED_BRANCH);
+}
 function selectBranch(el,name){
   document.querySelectorAll('.branch-btn').forEach(function(b){b.classList.remove('selected');});
   el.classList.add('selected');
@@ -888,9 +895,8 @@ function renderStep3(){
     var sub=g.items.length>1?'<span class="os"> ('+g.items.map(function(x){return x[0]+' '+(Number(d[x[1]])||0).toLocaleString();}).join(', ')+')</span>':'';
     rowsHtml+='<tr><td class="l">'+g.name+sub+'</td><td>'+fmtWon(dv)+'</td><td>'+fmtWon(av)+'</td><td>'+pct(av)+'</td></tr>';
   });
-  var vt0=acc.vendorTotals||{};
-  var oldAcc=(Number(vt0['마린푸드'])||0)+(Number(vt0['(주)마린'])||0)+(Number(vt0['스카이유통'])||0)+(Number(acc.legacyTotal)||0);
-  if(oldAcc>0){accSum+=oldAcc;rowsHtml+='<tr><td class="l">기존 입력분</td><td>-</td><td>'+fmtWon(oldAcc)+'</td><td>'+pct(oldAcc)+'</td></tr>';}
+  var oldAcc=Math.max(0,(Number(acc.totalOrderAmt)||0)-accSum);   // 이 앱 목록에 없는 업체·옛 입력분
+  if(oldAcc>0){accSum+=oldAcc;rowsHtml+='<tr><td class="l">기타·기존 입력분</td><td>-</td><td>'+fmtWon(oldAcc)+'</td><td>'+pct(oldAcc)+'</td></tr>';}
   var accTotal=Number(acc.totalOrderAmt)||accSum;
   rowsHtml+='<tr class="tot"><td class="l">합계</td><td>'+fmtWon(dayTot)+'</td><td>'+fmtWon(accTotal)+'</td><td>'+acc.costRate+'%</td></tr>';
   document.getElementById('cap-orderBody').innerHTML=rowsHtml;
@@ -914,8 +920,8 @@ function drawDonut(acc){
   var vt=(acc&&acc.vendorTotals)||{};
   var sales=Number(acc.totalSales)||0;
   var segs=GROUPS.map(function(g,i){return {name:g.name,val:groupAcc(g,acc),color:DONUT_COLORS[i]};});
-  var other=(Number(vt['마린푸드'])||0)+(Number(vt['(주)마린'])||0)+(Number(vt['스카이유통'])||0)+(Number(acc.legacyTotal)||0);
-  if(other>0)segs.push({name:'기존 입력분',val:other,color:DONUT_COLORS[6]});
+  var other=Math.max(0,(Number(acc.totalOrderAmt)||0)-segs.reduce(function(a,x){return a+x.val;},0));
+  if(other>0)segs.push({name:'기타·기존 입력분',val:other,color:'#8a8a8a'});
   segs=segs.filter(function(x){return x.val>0;});
   var total=segs.reduce(function(a,x){return a+x.val;},0);
   var cv=document.getElementById('capDonut'),ctx=cv.getContext('2d');
@@ -1284,6 +1290,7 @@ function resetApp(){
   historyVisible=false;
   var t=new Date();
   document.getElementById('entryDate').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  applyFixedBranch();
   goStep(1);
 }
 
