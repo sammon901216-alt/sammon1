@@ -146,7 +146,16 @@ textarea{resize:vertical;min-height:70px}
 .cap-net{display:flex;justify-content:space-between;align-items:center;margin-top:6px;background:#f6ecd9;border:1px solid var(--gold);padding:6px 12px;font-size:1.05rem;font-weight:700}
 .cap-net small{font-size:.78rem;font-weight:400;color:var(--muted)}
 .cap-net .cv{font-family:var(--font-serif);font-size:1.5rem;color:var(--accent)}
-.cap-orders{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cap-otable{width:100%;border-collapse:collapse;font-size:.95rem;background:#fff;border:1px solid var(--border)}
+.cap-otable th{background:var(--accent2);color:#fff;font-weight:600;padding:4px 9px;text-align:right;font-size:.88rem}
+.cap-otable th.l,.cap-otable td.l{text-align:left}
+.cap-otable td{padding:3px 9px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--font-serif);font-weight:700;color:var(--accent2);font-variant-numeric:tabular-nums}
+.cap-otable td.l{font-family:var(--font-sans);font-weight:400;color:var(--text)}
+.cap-otable td:nth-child(3){background:#faf6ec}
+.cap-otable td:last-child{font-size:.85rem;color:var(--muted);font-weight:400}
+.cap-otable .os{font-size:.7rem;color:var(--muted)}
+.cap-otable tr.tot td{background:#f6ecd9;border-top:2px solid var(--accent);color:var(--accent);font-size:1.05rem}
+.cap-otable tr.tot td.l{font-weight:700}
 .cap-ocell{border:1px solid var(--border);background:#fff;padding:4px 9px}
 .cap-ocell .ol{font-size:.85rem;color:var(--muted)}
 .cap-ocell .os{font-size:.68rem;color:var(--muted)}
@@ -523,8 +532,11 @@ textarea{resize:vertical;min-height:70px}
         </div>
         <div class="cap-net"><span>순매출 <small>(총매출 − 할인)</small></span><span class="cv" id="cap-netSales">—</span></div>
 
-        <div class="cap-sec">■ 발주금액 <small>(당일분)</small><span class="cap-sec-r" id="cap-orderTotal"></span></div>
-        <div class="cap-orders" id="cap-orders"></div>
+        <div class="cap-sec">■ 발주금액 <small>(당일 / 당월 누적)</small></div>
+        <table class="cap-otable">
+          <thead><tr><th class="l">업체</th><th>당일 발주</th><th>당월 누적 발주</th><th>원가율</th></tr></thead>
+          <tbody id="cap-orderBody"></tbody>
+        </table>
 
         <div class="cap-sec">■ 당월 누적 매출 현황</div>
         <div class="cap-acc">
@@ -867,15 +879,21 @@ function renderStep3(){
   document.getElementById('cap-discount').textContent=fmtWon(d.discount);
   document.getElementById('cap-netSales').textContent=fmtWon(d.netSales);
 
-  // ■ 발주금액 (당일)
-  var dayTot=0;
-  document.getElementById('cap-orders').innerHTML=GROUPS.map(function(g){
-    var v=groupDaily(g,d);dayTot+=v;
-    var sub=g.items.length>1?'<div class="os">'+g.items.map(function(x){return x[0]+' '+(Number(d[x[1]])||0).toLocaleString();}).join(' · ')+'</div>':'';
-    var lab=g.name+(g.items.length>1?'':'');
-    return '<div class="cap-ocell"><div class="ol">'+lab+'</div>'+sub+'<div class="ov">'+fmtWon(v)+'</div></div>';
-  }).join('');
-  document.getElementById('cap-orderTotal').textContent='합계 '+fmtWon(dayTot);
+  // ■ 발주금액 (당일 / 당월 누적) — 업체별 세로 배열
+  var salesAcc=Number(acc.totalSales)||0;
+  function pct(v){return salesAcc>0?(v/salesAcc*100).toFixed(1)+'%':'-';}
+  var dayTot=0,accSum=0,rowsHtml='';
+  GROUPS.forEach(function(g){
+    var dv=groupDaily(g,d),av=groupAcc(g,acc);dayTot+=dv;accSum+=av;
+    var sub=g.items.length>1?'<span class="os"> ('+g.items.map(function(x){return x[0]+' '+(Number(d[x[1]])||0).toLocaleString();}).join(', ')+')</span>':'';
+    rowsHtml+='<tr><td class="l">'+g.name+sub+'</td><td>'+fmtWon(dv)+'</td><td>'+fmtWon(av)+'</td><td>'+pct(av)+'</td></tr>';
+  });
+  var vt0=acc.vendorTotals||{};
+  var oldAcc=(Number(vt0['마린푸드'])||0)+(Number(vt0['(주)마린'])||0)+(Number(vt0['스카이유통'])||0)+(Number(acc.legacyTotal)||0);
+  if(oldAcc>0){accSum+=oldAcc;rowsHtml+='<tr><td class="l">기존 입력분</td><td>-</td><td>'+fmtWon(oldAcc)+'</td><td>'+pct(oldAcc)+'</td></tr>';}
+  var accTotal=Number(acc.totalOrderAmt)||accSum;
+  rowsHtml+='<tr class="tot"><td class="l">합계</td><td>'+fmtWon(dayTot)+'</td><td>'+fmtWon(accTotal)+'</td><td>'+acc.costRate+'%</td></tr>';
+  document.getElementById('cap-orderBody').innerHTML=rowsHtml;
 
   // ■ 당월 누적
   document.getElementById('cap-accSales').textContent=fmtWon(acc.totalSales);
