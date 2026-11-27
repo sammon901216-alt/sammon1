@@ -157,10 +157,21 @@ function show(id){['vPin','vHome','vEdit','vPreview','vDone'].forEach(function(v
 
 function api(action,params){
   if(!P.API_URL||/PASTE_/.test(P.API_URL))return Promise.reject(new Error('config.js 에 Apps Script 주소를 먼저 넣어주세요.'));
-  var body=Object.assign({action:action,token:P.API_TOKEN,pin:PIN},params||{});
-  return fetch(P.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
-    .then(function(r){return r.json();})
-    .then(function(res){if(!res.success)throw new Error(res.error||'오류');return res;});
+  params=params||{};
+  var body=Object.assign({action:action,token:P.API_TOKEN,pin:PIN},params);
+  var small=JSON.stringify(body).length<6000;
+  var req;
+  if(small){   // 작은 요청은 GET (가장 호환성 좋음)
+    var url=new URL(P.API_URL);
+    url.searchParams.set('action',action);url.searchParams.set('token',P.API_TOKEN);url.searchParams.set('pin',JSON.stringify(PIN));
+    Object.keys(params).forEach(function(k){url.searchParams.set(k,JSON.stringify(params[k]));});
+    req=fetch(url.toString());
+  }else{       // 로고처럼 큰 요청은 POST
+    req=fetch(P.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  }
+  return req.then(function(r){return r.text();})
+    .then(function(t){var res;try{res=JSON.parse(t);}catch(e){throw new Error('서버 응답을 읽을 수 없어요. 배포 설정(액세스: 모든 사용자)을 확인하세요.');}
+      if(!res.success)throw new Error(res.error||'오류');return res;});
 }
 
 // ── PIN ──
@@ -170,7 +181,7 @@ function doPin(){
   busy(true);
   api('editorInfo').then(function(r){OWNER=r.ownerEmail||'';return loadBrands();})
     .then(function(){busy(false);show('vHome');renderHome();})
-    .catch(function(e){busy(false);PIN='';toast(e.message);});
+    .catch(function(e){busy(false);PIN='';toast(/fetch/i.test(e.message)?'서버에 연결할 수 없어요. (주소·배포 설정 확인)':e.message);});
 }
 function loadBrands(){return api('listBrands').then(function(r){BRANDS=r.brands||[];});}
 
