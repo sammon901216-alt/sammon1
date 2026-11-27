@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아티잔 인터내셔널 통합 편집기</title>
+<script src="../config.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f0e8;--surface:#fdfaf4;--border:#c8b99a;--accent:#8b2c2c;--accent2:#2c4a6e;--text:#2a2015;--muted:#7a6a52;--gold:#c49a3c;--green:#3a6b3a;--serif:'Noto Serif KR',serif;--sans:'Noto Sans KR',sans-serif}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:60px}
+header{background:var(--accent);color:#fff;text-align:center;padding:16px;border-bottom:3px solid var(--gold)}
+header h1{font-family:var(--serif);font-size:1.15rem;letter-spacing:.08em}
+header small{display:block;font-size:.72rem;opacity:.8;margin-top:3px}
+.wrap{max-width:560px;margin:16px auto;padding:0 14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:14px;box-shadow:0 2px 8px rgba(42,32,21,.1);overflow:hidden}
+.ch{background:var(--accent2);color:#fff;padding:10px 14px;font-family:var(--serif);font-size:.88rem;letter-spacing:.06em;display:flex;justify-content:space-between;align-items:center}
+.cb{padding:14px}
+label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=password],textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:16px;font-family:var(--sans);color:var(--text)}
+input:focus{outline:none;border-color:var(--accent2)}
+.btn{display:block;width:100%;padding:13px;border:none;border-radius:4px;font-family:var(--serif);font-size:.95rem;cursor:pointer;margin-top:10px}
+.btn:active{opacity:.85}
+.b-red{background:var(--accent);color:#fff}.b-blue{background:var(--accent2);color:#fff}.b-green{background:var(--green);color:#fff}
+.b-line{background:#fff;color:var(--accent2);border:1px solid var(--accent2)}
+.sm{display:inline-block;width:auto;padding:6px 12px;font-size:.78rem;margin:0 0 0 6px;font-family:var(--sans)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hidden{display:none!important}
+.pin-box{max-width:320px;margin:60px auto;text-align:center}
+.pin-box input{text-align:center;letter-spacing:.5em;font-size:22px}
+.group-title{font-family:var(--serif);color:var(--accent);font-size:1rem;border-left:4px solid var(--gold);padding-left:10px;margin:6px 0 12px}
+.brand-card{display:flex;gap:12px;align-items:center}
+.logo-box{width:72px;height:72px;border:1px dashed var(--border);border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:.68rem;color:var(--muted);text-align:center}
+.logo-box img{max-width:100%;max-height:100%;object-fit:contain}
+.bname{font-family:var(--serif);font-weight:700;font-size:1rem}
+.badge{display:inline-block;font-size:.66rem;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;font-family:var(--sans);font-weight:500}
+.bd-draft{background:#fff3cd;color:#8a6d00}.bd-applied{background:#e1f2e1;color:#2e6b2e}.bd-modified{background:#ffe3d1;color:#a14a00}
+.chips{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:.72rem;background:#efe7d6;border:1px solid var(--border);border-radius:12px;padding:2px 10px;color:var(--muted)}
+.list-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.list-row input{flex:1}
+.list-row .g{flex:.8}
+.ib{border:1px solid var(--border);background:#fff;border-radius:4px;width:34px;height:40px;cursor:pointer;color:var(--muted);font-size:.9rem;flex-shrink:0}
+.ib.del{color:var(--accent)}
+.hide-row input{background:#eee;text-decoration:line-through;color:#999}
+.hint{font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:6px}
+.steps{list-style:none;counter-reset:s}
+.steps li{counter-increment:s;padding:8px 0 8px 34px;position:relative;font-size:.84rem;line-height:1.6;border-bottom:1px dashed var(--border)}
+.steps li:last-child{border:none}
+.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:.74rem;display:flex;align-items:center;justify-content:center}
+code,.mono{background:#efe7d6;padding:2px 6px;border-radius:3px;font-size:.78rem;word-break:break-all;font-family:monospace}
+.phone{width:100%;max-width:430px;height:720px;border:2px solid var(--text);border-radius:14px;margin:0 auto;display:block;background:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:.82rem;transition:.3s;z-index:50;max-width:90%;text-align:center}
+.toast.show{transform:translateX(-50%)}
+.ld{position:fixed;inset:0;background:rgba(245,240,232,.9);display:none;align-items:center;justify-content:center;z-index:40;font-family:var(--serif);color:var(--muted)}
+.ld.show{display:flex}
+.crumb{font-size:.78rem;color:var(--muted);margin-bottom:10px}.crumb a{color:var(--accent2);cursor:pointer;text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="ld" id="ld">잠시만 기다려 주세요…</div>
+<div class="toast" id="toast"></div>
+<header><h1>아티잔 인터내셔널 통합 편집기</h1><small>브랜드 · 지점 · 발주업체 관리</small></header>
+
+<!-- PIN -->
+<div id="vPin" class="pin-box card"><div class="cb">
+  <div class="group-title" style="text-align:left">PIN 입력</div>
+  <input type="password" id="pin" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')doPin()">
+  <button class="btn b-red" onclick="doPin()">확인</button>
+</div></div>
+
+<div class="wrap">
+<!-- 홈 -->
+<div id="vHome" class="hidden">
+  <div class="card"><div class="cb" style="text-align:center">
+    <div class="bname" style="font-size:1.25rem;color:var(--accent)">아티잔그룹</div>
+    <div class="hint">등록된 브랜드를 선택해 편집하거나 새 브랜드를 추가하세요.</div>
+  </div></div>
+  <div id="brandList"></div>
+  <button class="btn b-red" onclick="newBrand()">＋ 브랜드 추가</button>
+</div>
+
+<!-- 브랜드 편집 -->
+<div id="vEdit" class="hidden">
+  <div class="crumb"><a onclick="goHome()">아티잔그룹</a> › <span id="crumbName">새 브랜드</span></div>
+  <div class="card"><div class="ch">① 브랜드 정보</div><div class="cb">
+    <label>브랜드명</label><input type="text" id="bName" placeholder="예: 고이안 샤브샤브">
+    <label style="margin-top:12px">브랜드 로고 (PNG/JPG)</label>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="logo-box" id="logoBox">로고 없음</div>
+      <div style="flex:1"><input type="file" id="logoFile" accept="image/*" onchange="pickLogo(this)">
+      <button class="btn b-line sm" style="margin:6px 0 0" onclick="clearLogo()">로고 지우기</button></div>
+    </div>
+    <div class="hint">로고는 자동으로 작게 줄여 저장돼요. 배경이 투명한 PNG를 권장합니다.</div>
+  </div></div>
+
+  <div class="card"><div class="ch">② 지점 <button class="btn b-line sm" style="margin:0" onclick="addBranch()">＋ 추가</button></div><div class="cb">
+    <div id="branchRows"></div>
+    <div class="hint">지점이 1개면 앱에서 자동 선택됩니다. 이름을 바꾸면 기존 기록과 이름이 달라질 수 있으니 처음부터 정확히 적어주세요.</div>
+  </div></div>
+
+  <div class="card"><div class="ch">③ 발주업체 <button class="btn b-line sm" style="margin:0" onclick="addVendor()">＋ 추가</button></div><div class="cb">
+    <div id="vendorRows"></div>
+    <div class="hint">• <b>묶음</b>을 같은 이름으로 적으면 앱에서 한 항목(예: 음료)으로 묶여 표시돼요. 비워두면 업체 단독 항목이에요.<br>• 이미 저장된 업체를 삭제하면 <b>숨김</b> 처리되고 과거 기록은 그대로 보존돼요. 이름은 자유롭게 바꿔도 기록이 유지됩니다.</div>
+  </div></div>
+
+  <div class="card"><div class="ch">할인 항목 (모든 브랜드 공통 · 고정)</div><div class="cb">
+    <div class="chips" style="margin:0"><span class="chip">입주사할인</span><span class="chip">고객서비스제공</span><span class="chip">블로거서비스</span><span class="chip">기타할인</span></div>
+    <div class="hint">각 항목은 금액과 건수를 함께 입력합니다.</div>
+  </div></div>
+
+  <button class="btn b-red" onclick="confirmBrand()">확정 → 매출일보 시안 보기</button>
+  <button class="btn b-line" onclick="goHome()">목록으로</button>
+</div>
+
+<!-- 시안 -->
+<div id="vPreview" class="hidden">
+  <div class="crumb"><a onclick="goHome()">아티잔그룹</a> › <span id="crumbName2"></span> › 시안 검토</div>
+  <div class="card"><div class="cb"><div class="hint" style="margin:0">아래는 앱이 실제로 보이는 모습이에요. 지점을 고르고 값을 넣어 <b>작성완료 → 제출</b>까지 눌러보세요. (시안이라 저장되지 않아요)</div></div></div>
+  <iframe id="frame" class="phone" src="about:blank"></iframe>
+  <div class="row2">
+    <button class="btn b-line" onclick="backToEdit()">◀ 수정하기</button>
+    <button class="btn b-green" onclick="applyNow()">✔ 이상 없음 · 적용</button>
+  </div>
+</div>
+
+<!-- 적용 후 연결 -->
+<div id="vDone" class="hidden">
+  <div class="crumb"><a onclick="goHome()">아티잔그룹</a> › <span id="crumbName3"></span> › 연결</div>
+  <div class="card"><div class="ch">✅ 적용 완료</div><div class="cb">
+    <div class="hint" style="margin:0 0 8px">이제 아래 순서대로 시트 연결과 GitHub 올리기만 하면 끝이에요.</div>
+    <ol class="steps">
+      <li><b>데이터를 저장할 구글 시트 준비</b><br>브랜드 담당자의 새 구글 시트를 만들고, 오른쪽 위 <b>공유</b>에서 아래 이메일을 <b>편집자</b>로 추가하세요.<br><span class="mono" id="ownerEmail">…</span></li>
+      <li><b>시트 주소 붙여넣고 연결</b><br><input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/…">
+        <button class="btn b-blue" onclick="connect()">시트에 연결</button>
+        <div class="hint" id="connectMsg">비워두고 연결하면 이 플랫폼 시트 안에 저장돼요 (테스트용).</div></li>
+      <li><b>앱 파일(index.html) 받기</b><br><button class="btn b-line" onclick="downloadIndex()">⬇ 이 브랜드 index.html 다운로드</button></li>
+      <li><b>GitHub에 올리기</b><br>저장소의 <code>artisan/<span id="folderName">브랜드폴더</span>/</code> 폴더를 만들고 받은 파일을 <code>index.html</code>로 올리세요. (<code>artisan/config.js</code> 는 이미 올려져 있어야 해요)</li>
+      <li><b>접속 주소</b><br><span class="mono" id="appLink">…</span><br><span class="hint">또는 파일 없이 바로: <span class="mono" id="appLink2"></span></span></li>
+    </ol>
+  </div></div>
+  <button class="btn b-line" onclick="goHome()">아티잔그룹으로</button>
+</div>
+</div>
+
+<script>
+var P=window.PLATFORM||{};
+var PIN='';var BR=null;      // 현재 편집 중 브랜드
+var BRANDS=[];var OWNER='';
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},3000);}
+function busy(on){$('ld').classList.toggle('show',!!on);}
+function show(id){['vPin','vHome','vEdit','vPreview','vDone'].forEach(function(v){$(v).classList.toggle('hidden',v!==id);});window.scrollTo(0,0);}
+
+function api(action,params){
+  if(!P.API_URL||/PASTE_/.test(P.API_URL))return Promise.reject(new Error('config.js 에 Apps Script 주소를 먼저 넣어주세요.'));
+  var body=Object.assign({action:action,token:P.API_TOKEN,pin:PIN},params||{});
+  return fetch(P.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(res){if(!res.success)throw new Error(res.error||'오류');return res;});
+}
+
+// ── PIN ──
+function doPin(){
+  PIN=$('pin').value.trim();
+  if(!PIN){toast('PIN을 입력해 주세요.');return;}
+  busy(true);
+  api('editorInfo').then(function(r){OWNER=r.ownerEmail||'';return loadBrands();})
+    .then(function(){busy(false);show('vHome');renderHome();})
+    .catch(function(e){busy(false);PIN='';toast(e.message);});
+}
+function loadBrands(){return api('listBrands').then(function(r){BRANDS=r.brands||[];});}
+
+// ── 홈 ──
+function goHome(){busy(true);loadBrands().then(function(){busy(false);show('vHome');renderHome();}).catch(function(e){busy(false);toast(e.message);});}
+var STAT={draft:['작성중','bd-draft'],applied:['적용됨','bd-applied'],modified:['수정됨(재적용 필요)','bd-modified']};
+function renderHome(){
+  if(!BRANDS.length){$('brandList').innerHTML='<div class="card"><div class="cb hint" style="text-align:center;margin:0">아직 등록된 브랜드가 없어요.<br>아래 <b>＋ 브랜드 추가</b>를 눌러 시작하세요.</div></div>';return;}
+  $('brandList').innerHTML=BRANDS.map(function(b,i){
+    var st=STAT[b.status]||STAT.draft;
+    return '<div class="card"><div class="cb">'
+      +'<div class="brand-card"><div class="logo-box">'+(b.logo?'<img src="'+b.logo+'">':'로고 없음')+'</div>'
+      +'<div style="flex:1"><div class="bname">'+esc(b.name)+'<span class="badge '+st[1]+'">'+st[0]+'</span></div>'
+      +'<div class="chips">'+(b.branches||[]).map(function(x){return '<span class="chip">'+esc(x)+'</span>';}).join('')+'</div>'
+      +'<div class="hint" style="margin-top:4px">발주업체 '+b.vendorCount+'곳</div></div></div>'
+      +'<div class="row2" style="margin-top:10px"><button class="btn b-blue" style="margin:0" onclick="editBrand('+i+')">편집</button>'
+      +'<button class="btn b-line" style="margin:0" onclick="delBrand('+i+')">삭제</button></div>'
+      +(b.status!=='draft'?'<button class="btn b-line" onclick="openConnect('+i+')">시트 연결 · 앱 주소 보기</button>':'')
+      +'</div></div>';
+  }).join('');
+}
+function delBrand(i){
+  var b=BRANDS[i];
+  if(!confirm('"'+b.name+'" 브랜드를 삭제할까요?\n(이미 입력된 매출 데이터 탭은 시트에 남아요. 앱은 더 이상 열리지 않습니다.)'))return;
+  busy(true);api('deleteBrand',{brandId:b.brandId}).then(function(r){busy(false);toast('삭제했어요.');goHome();}).catch(function(e){busy(false);toast(e.message);});
+}
+
+// ── 편집 ──
+function newBrand(){BR={brandId:'',name:'',branches:[''],vendors:[{id:'',name:'',group:'',active:true}],logo:null,logoChanged:false};openEdit();}
+function editBrand(i){
+  busy(true);api('getBrand',{brandId:BRANDS[i].brandId}).then(function(r){
+    busy(false);BR=r.brand;BR.logoChanged=false;
+    if(!BR.branches.length)BR.branches=[''];
+    openEdit();
+  }).catch(function(e){busy(false);toast(e.message);});
+}
+function openEdit(){
+  $('bName').value=BR.name;$('crumbName').textContent=BR.name||'새 브랜드';
+  renderLogo();renderBranches();renderVendors();show('vEdit');
+}
+function renderLogo(){$('logoBox').innerHTML=BR.logo?'<img src="'+BR.logo+'">':'로고 없음';}
+function pickLogo(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var max=260,sc=Math.min(1,max/Math.max(img.width,img.height));
+      var cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      BR.logo=cv.toDataURL('image/png');BR.logoChanged=true;renderLogo();
+    };
+    img.onerror=function(){toast('이미지를 읽을 수 없어요.');};
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+}
+function clearLogo(){BR.logo='';BR.logoChanged=true;renderLogo();$('logoFile').value='';}
+
+function syncName(){BR.name=$('bName').value.trim();}
+function renderBranches(){
+  $('branchRows').innerHTML=BR.branches.map(function(b,i){
+    return '<div class="list-row"><input type="text" value="'+esc(b)+'" placeholder="지점명 (예: 본점)" oninput="BR.branches['+i+']=this.value"><button class="ib del" onclick="delBranch('+i+')">✕</button></div>';
+  }).join('');
+}
+function addBranch(){BR.branches.push('');renderBranches();}
+function delBranch(i){BR.branches.splice(i,1);if(!BR.branches.length)BR.branches=[''];renderBranches();}
+
+function renderVendors(){
+  $('vendorRows').innerHTML=BR.vendors.map(function(v,i){
+    var off=v.active===false;
+    return '<div class="list-row '+(off?'hide-row':'')+'">'
+      +'<input type="text" value="'+esc(v.name)+'" placeholder="업체명" oninput="BR.vendors['+i+'].name=this.value" '+(off?'readonly':'')+'>'
+      +'<input type="text" class="g" value="'+esc(v.group||'')+'" placeholder="묶음(선택)" oninput="BR.vendors['+i+'].group=this.value" '+(off?'readonly':'')+'>'
+      +'<button class="ib" onclick="moveV('+i+',-1)">▲</button><button class="ib" onclick="moveV('+i+',1)">▼</button>'
+      +(off?'<button class="ib" title="다시 사용" onclick="BR.vendors['+i+'].active=true;renderVendors()">↺</button>':'<button class="ib del" onclick="delVendor('+i+')">✕</button>')
+      +'</div>';
+  }).join('');
+}
+function addVendor(){BR.vendors.push({id:'',name:'',group:'',active:true});renderVendors();}
+function delVendor(i){
+  var v=BR.vendors[i];
+  if(v.id){v.active=false;toast('숨김 처리됐어요. 과거 기록은 보존돼요.');}   // 저장된 업체는 숨김
+  else BR.vendors.splice(i,1);
+  renderVendors();
+}
+function moveV(i,d){var j=i+d;if(j<0||j>=BR.vendors.length)return;var t=BR.vendors[i];BR.vendors[i]=BR.vendors[j];BR.vendors[j]=t;renderVendors();}
+
+function currentPayload(){
+  syncName();
+  var p={brandId:BR.brandId||'',name:BR.name,
+    branches:BR.branches.map(function(x){return x.trim();}).filter(Boolean),
+    vendors:BR.vendors.filter(function(v){return v.name.trim();})};
+  if(BR.logoChanged)p.logo=BR.logo||'';
+  return p;
+}
+function confirmBrand(){
+  var p=currentPayload();
+  if(!p.name){toast('브랜드명을 입력해 주세요.');return;}
+  if(!p.branches.length){toast('지점을 1개 이상 입력해 주세요.');return;}
+  busy(true);
+  api('saveBrand',{brand:p}).then(function(r){
+    BR.brandId=r.brandId;BR.logoChanged=false;
+    // 서버가 부여한 업체 id 반영 (이름 순서 기준 매칭)
+    var named=BR.vendors.filter(function(v){return v.name.trim();});
+    BR.vendors=r.vendors.map(function(v){return v;});
+    BR.name=p.name;BR.branches=p.branches;
+    busy(false);openPreview();
+  }).catch(function(e){busy(false);toast(e.message);});
+}
+
+// ── 시안 ──
+function openPreview(){
+  $('crumbName2').textContent=BR.name;
+  show('vPreview');
+  $('frame').src='../app/index.html?preview=1&t='+Date.now();
+}
+function previewConfig(){
+  return {name:BR.name,branches:BR.branches,logo:BR.logo||'',vendors:BR.vendors,version:0};
+}
+window.addEventListener('message',function(ev){
+  if(ev.data&&ev.data.type==='previewReady'&&BR){
+    ev.source.postMessage({type:'previewConfig',config:previewConfig()},'*');
+  }
+});
+function backToEdit(){openEdit();}
+function applyNow(){
+  if(!confirm('이대로 적용할까요?'))return;
+  busy(true);
+  api('applyBrand',{brandId:BR.brandId}).then(function(r){
+    busy(false);if(r.warning)toast(r.warning);
+    return loadBrands();
+  }).then(function(){var i=BRANDS.findIndex(function(b){return b.brandId===BR.brandId;});openConnect(i);})
+  .catch(function(e){busy(false);toast(e.message);});
+}
+
+// ── 연결 ──
+function appBase(){return location.href.replace(/editor\/[^\/]*$/,'').replace(/[?#].*$/,'');}
+function folderOf(b){return String(b.name).replace(/[^0-9A-Za-z가-힣_-]/g,'')||b.brandId;}
+function openConnect(i){
+  var b=BRANDS[i];BR=BR&&BR.brandId===b.brandId?BR:{brandId:b.brandId,name:b.name};
+  BR.name=b.name;BR.brandId=b.brandId;
+  $('crumbName3').textContent=b.name;
+  $('ownerEmail').textContent=OWNER||'(스크립트 소유 계정 이메일 — 플랫폼 시트를 만든 구글 계정)';
+  $('folderName').textContent=folderOf(b);
+  $('appLink').textContent=appBase()+folderOf(b)+'/';
+  $('appLink2').textContent=appBase()+'app/?brand='+b.brandId;
+  $('sheetUrl').value='';$('connectMsg').textContent='비워두고 연결하면 이 플랫폼 시트 안에 저장돼요 (테스트용).';
+  show('vDone');
+}
+function connect(){
+  busy(true);
+  api('connectSheet',{brandId:BR.brandId,sheetRef:$('sheetUrl').value.trim()}).then(function(r){
+    busy(false);$('connectMsg').innerHTML='✅ 연결됐어요: <b>'+esc(r.sheetName)+'</b> 에 매출일보/근무 탭이 준비됐어요.';
+  }).catch(function(e){busy(false);$('connectMsg').textContent='⚠ '+e.message;});
+}
+function downloadIndex(){
+  busy(true);
+  fetch('../app/index.html').then(function(r){return r.text();}).then(function(t){
+    var CJ='<script src="../config.js"><\/script>';t=t.replace(CJ,CJ+'\n<script>window.BRAND_ID='+JSON.stringify(BR.brandId)+';<\/script>');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/html'}));a.download='index.html';a.click();
+    busy(false);toast('index.html 을 받았어요.');
+  }).catch(function(){busy(false);toast('파일을 가져오지 못했어요. 아래 "파일 없이 바로" 주소를 쓰세요.');});
+}
+</script>
+</body>
+</html>
